@@ -1,0 +1,24 @@
+<jbi version="1.0" xmlns="http://java.sun.com/xml/ns/jbi"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<component type="service-engine">
+		<identification>
+			<name>petals-sample-client</name>
+			<description>
+				A Client Component for testing Petals
+			</description>
+		</identification>
+		<component-class-name
+			description="SampleClient Component class">
+			org.ow2.petals.engine.client.ClientSe
+		</component-class-name>
+		<component-class-path>
+			<path-element />
+		</component-class-path>
+		<bootstrap-class-name>
+			org.ow2.petals.engine.client.ClientBootstrap
+		</bootstrap-class-name>
+		<bootstrap-class-path>
+			<path-element />
+		</bootstrap-class-path>
+	</component>
+</jbi>

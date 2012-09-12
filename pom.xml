@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project 
+		xmlns="http://maven.apache.org/POM/4.0.0" 
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	
+	<modelVersion>4.0.0</modelVersion>
+	<!-- FIXME: add a parent? -->
+	
+	<name>petals-se-client</name>
+	<artifactId>petals-se-client</artifactId>
+	<groupId>org.ow2.petals</groupId>
+	<packaging>jar</packaging>
+	<version>1.0.0-SNAPSHOT</version>
+    
+	<dependencies>
+		<dependency>
+			<groupId>org.ow2.petals</groupId>
+			<artifactId>petals-jaas</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ow2.petals</groupId>
+			<artifactId>petals-jbi</artifactId>
+			<version>1.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ow2.easywsdl</groupId>
+			<artifactId>easywsdl-wsdl</artifactId>
+			<version>2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>org.ow2.easywsdl</groupId>
+			<artifactId>easywsdl-tool-xsd2xml</artifactId>
+			<version>2.5-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.2</version>
+			<scope>test</scope>
+		</dependency>
+	
+		<!-- This library is only used to factorize SWT code -->
+		<!-- The runtime libraries that depend on the platform will be specified by specialized component projects -->
+		<dependency>
+			<groupId>org.eclipse.swt</groupId>
+			<artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
+			<version>3.7.2</version>
+		</dependency>
+    
+		<!-- JFace dependencies -->
+		<dependency>
+			<groupId>org.eclipse.jface</groupId>
+			<artifactId>org.eclipse.jface</artifactId>
+			<version>3.7.0.v20110928-1505</version>
+		</dependency>
+	</dependencies>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>1.7</version>
+				<executions>
+					<execution>
+						<id>add-source</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>src/swt/java</source>
+							</sources>
+						</configuration>
+					</execution>
+					<execution>
+						<id>add-resource</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>add-resource</goal>
+						</goals>
+						<configuration>
+							<resources>
+                				<resource>
+                  					<directory>src/swt/resources</directory>
+                  					<targetPath>swt/resources</targetPath>
+                  				</resource>
+                  			</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+	
+	<repositories>
+		<repository>
+			<id>swt-repo</id>
+			<url>https://swt-repo.googlecode.com/svn/repo/</url>
+		</repository>
+	</repositories>
+  
+	<scm>
+		<connection>scm:svn:https://svn.petalslink.org/svnroot/trunk/product/dev/prod/petals/components-sls/petals-se-client</connection>
+		<developerConnection>scm:svn:https://svn.petalslink.org/svnroot/trunk/product/dev/prod/petals/components-sls/petals-se-client</developerConnection>
+	</scm>
+</project>
