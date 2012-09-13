@@ -20,6 +20,7 @@
 
 package org.ow2.petals.engine.client.swt.manual;
 
+import org.eclipse.swt.widgets.Shell;
 import org.ow2.petals.engine.client.swt.ClientApplication;
 
 /**
@@ -33,7 +34,7 @@ public class Main {
      */
     public static void main( String[] args ) {
 
-        ClientApplication app = new ClientApplication( new MockPetalsFacade( false, true ));
+        ClientApplication app = new ClientApplication( new MockPetalsFacade( false, true ), new Shell());
         app.setBlockOnOpen( true );
         app.open();
     }

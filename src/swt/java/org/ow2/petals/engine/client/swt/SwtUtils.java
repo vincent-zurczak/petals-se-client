@@ -30,6 +30,7 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.widgets.Display;
+import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion;
 
 /**
@@ -49,8 +50,10 @@ public class SwtUtils {
 		InputStream in = null;
 		try {
 			in = SwtUtils.class.getResourceAsStream( relativePath );
-			ImageData imgData = new ImageData( in );
-			result = new Image( Display.getDefault(), imgData );
+			if( in != null ) {
+				ImageData imgData = new ImageData( in );
+				result = new Image( Display.getDefault(), imgData );
+			}
 
 		} catch( Exception e ) {
 			e.printStackTrace();
@@ -71,9 +74,10 @@ public class SwtUtils {
 	/**
 	 * Computes style ranges from XML regions.
 	 * @param regions an ordered list of XML regions
+	 * @param colorManager
 	 * @return an ordered list of style ranges for SWT styled text
 	 */
-	public static StyleRange[] computeStyleRanges( List<XmlRegion> regions ) {
+	public static StyleRange[] computeStyleRanges( List<XmlRegion> regions, ColorCacheManager colorManager ) {
 
 		List<StyleRange> styleRanges = new ArrayList<StyleRange> ();
 		for( XmlRegion xr : regions ) {
@@ -81,23 +85,12 @@ public class SwtUtils {
 			// The style itself depends on the region type
 			// In this example, we use colors from the system
 			StyleRange sr = new StyleRange();
+			sr.foreground = colorManager.getColor( xr.getXmlRegionType());
+
 			switch( xr.getXmlRegionType()) {
 		        case MARKUP:
-		        	sr.foreground = Display.getDefault().getSystemColor( SWT.COLOR_GREEN );
 		        	sr.fontStyle = SWT.BOLD;
 		        	break;
-
-		        case ATTRIBUTE:
-		        	sr.foreground = Display.getDefault().getSystemColor( SWT.COLOR_DARK_RED );
-		        	break;
-
-		        // And so on...
-		        case ATTRIBUTE_VALUE: break;
-		        case MARKUP_VALUE: break;
-		        case COMMENT: break;
-		        case INSTRUCTION: break;
-		        case CDATA: break;
-		        case WHITESPACE: break;
 		        default: break;
 		    }
 

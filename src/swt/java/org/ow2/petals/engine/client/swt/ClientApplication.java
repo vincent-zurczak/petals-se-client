@@ -14,9 +14,11 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.ow2.petals.engine.client.swt.dialogs.AboutDialog;
+import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.tabs.HistoryTab;
 import org.ow2.petals.engine.client.swt.tabs.PreferencesTab;
 import org.ow2.petals.engine.client.swt.tabs.RequestTab;
@@ -30,16 +32,19 @@ public class ClientApplication extends ApplicationWindow {
 
 	private Image appli16, appli32, appli48, leftArrowImg, rightArrowImg;
 	private final PetalsFacade petalsFacade;
+	private final ColorCacheManager colorManager;
 
 
 
 	/**
 	 * Constructor.
 	 * @param petalsFacade
+	 * @param parent
 	 */
-	public ClientApplication( PetalsFacade petalsFacade ) {
-		super( null );
+	public ClientApplication( PetalsFacade petalsFacade, Shell parent ) {
+		super( parent );
 		this.petalsFacade = petalsFacade;
+		this.colorManager = new ColorCacheManager();
 
 		try {
 			ImageData imgData = new ImageData( "./icons/appli_16x16.png" );
@@ -102,8 +107,8 @@ public class ClientApplication extends ApplicationWindow {
 		// Shell properties
 		getShell().setText( "Petals Client" );
 		getShell().setBounds( Display.getCurrent().getBounds());
+		getShell().setMaximized( true );
 		// getShell().setImages( new Image[] { this.appli16, this.appli32, this.appli48 });
-
 
 		// Create the container
 		Composite container = new Composite( parent, SWT.NONE );
@@ -124,7 +129,7 @@ public class ClientApplication extends ApplicationWindow {
 		TabItem tabItem = new TabItem( tabFolder, SWT.NONE );
 	    tabItem.setText( "Client" );
 	    tabItem.setToolTipText( "The client area" );
-	    tabItem.setControl( new RequestTab( tabFolder, this.petalsFacade ));
+	    tabItem.setControl( new RequestTab( tabFolder, this.petalsFacade, this.colorManager ));
 
 	    tabItem = new TabItem( tabFolder, SWT.NONE );
 	    tabItem.setText( "History" );
@@ -134,7 +139,7 @@ public class ClientApplication extends ApplicationWindow {
 	    tabItem = new TabItem( tabFolder, SWT.NONE );
 	    tabItem.setText( "Preferences" );
         tabItem.setToolTipText( "The user preferences" );
-	    tabItem.setControl( new PreferencesTab( tabFolder ));
+	    tabItem.setControl( new PreferencesTab( tabFolder, this.colorManager ));
 
 		return container;
 	}

@@ -21,10 +21,16 @@
 package org.ow2.petals.engine.client.swt.tabs;
 
 import java.io.File;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.ComboViewer;
+import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -37,6 +43,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
+import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 
 /**
  * The preferences tab.
@@ -47,8 +54,9 @@ public class PreferencesTab extends Composite {
 	/**
 	 * Constructor.
 	 * @param parent
+	 * @param colorManager
 	 */
-	public PreferencesTab( Composite parent ) {
+	public PreferencesTab( Composite parent, ColorCacheManager colorManager ) {
 
 		// Root elements
 		super( parent, SWT.NONE );
@@ -81,7 +89,7 @@ public class PreferencesTab extends Composite {
 				DirectoryDialog dlg = new DirectoryDialog( getShell());
 				String dir = dlg.open();
 				if( dir != null ) {
-					PreferencesManager.INSTANCE.setHistoryDirectory( new File( dir ));
+					PreferencesManager.INSTANCE.saveHistoryDirectory( new File( dir ));
 					directoryText.setText( dir );
 				}
 			}
@@ -123,5 +131,55 @@ public class PreferencesTab extends Composite {
 		Spinner timeoutSpinner = new Spinner( defaultGroup, SWT.BORDER );
 		long value = PreferencesManager.INSTANCE.getDefaultTimeout();
 		timeoutSpinner.setValues((int) value, 0, Integer.MAX_VALUE, 0, 1000, 100 );
+
+
+		// Syntax highlight
+		Group shGroup = new Group( this, SWT.SHADOW_ETCHED_IN );
+		shGroup.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
+		shGroup.setLayout( new GridLayout( 2, false ));
+		shGroup.setText( "Syntax Highlighting" );
+
+		final Map<String,String> keyToLabel = new LinkedHashMap<String,String> ();
+		keyToLabel.put( PreferencesManager.COLOR_COMMENT, "XML Comments" );
+		keyToLabel.put( PreferencesManager.COLOR_MARKUP, "XML Mark-ups" );
+		keyToLabel.put( PreferencesManager.COLOR_ATTRIBUTE, "XML Attributes" );
+		keyToLabel.put( PreferencesManager.COLOR_ATTRIBUTE_VALUE, "Attribute Values" );
+		keyToLabel.put( PreferencesManager.COLOR_CDATA, "CDATA Sections" );
+		keyToLabel.put( PreferencesManager.COLOR_INSTRUCTION, "XML Instructions" );
+
+		// List the customizable elements...
+		ComboViewer styleViewer = new ComboViewer( shGroup, SWT.BORDER | SWT.SINGLE | SWT.READ_ONLY );
+		styleViewer.setContentProvider( new ArrayContentProvider());
+		styleViewer.setLabelProvider( new LabelProvider() {
+			@Override
+			public String getText( Object element ) {
+				return keyToLabel.get( element );
+			};
+		});
+
+		GridDataFactory.swtDefaults().align( SWT.CENTER, SWT.BEGINNING ).hint( 200, SWT.DEFAULT ).applyTo( styleViewer.getCombo());
+		styleViewer.setInput( keyToLabel.keySet());
+
+		// ... and their properties
+		Composite styleComposite = new Composite( shGroup, SWT.NONE );
+		GridLayoutFactory.swtDefaults().margins( 0, 0 ).numColumns( 5 ).applyTo( styleComposite );
+		styleComposite.setLayoutData( new GridData( GridData.FILL_BOTH ));
+
+		final Button boldButton = new Button( styleComposite, SWT.CHECK );
+		boldButton.setText( "Bold" );
+
+		final Button italicButton = new Button( styleComposite, SWT.CHECK );
+		italicButton.setText( "Italic" );
+
+		final Button underlineButton = new Button( styleComposite, SWT.CHECK );
+		underlineButton.setText( "Underline" );
+
+		new Label( styleComposite, SWT.NONE ).setText( "Foreground Color:" );
+		Button b = new Button( styleComposite, SWT.PUSH );
+		b.setText( "Edit..." );
+
+		StyledText st = new StyledText( styleComposite, SWT.MULTI | SWT.BORDER );
+		st.setLayoutData( new GridData( GridData.FILL_BOTH ));
+		GridDataFactory.swtDefaults().span( 5, 1 ).applyTo( st );
 	}
 }

@@ -54,8 +54,7 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
-import org.eclipse.swt.events.MouseAdapter;
-import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -67,6 +66,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
@@ -81,6 +81,7 @@ import org.ow2.petals.engine.client.swt.SwtUtils;
 import org.ow2.petals.engine.client.swt.dialogs.KeyValueDialog;
 import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog;
 import org.ow2.petals.engine.client.swt.dialogs.ShowWsdlDialog;
+import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegionAnalyzer;
 import org.ow2.petals.engine.client.swt.viewers.FilesLabelProvider;
@@ -95,13 +96,18 @@ import org.w3c.dom.Document;
  */
 public class RequestTab extends Composite {
 
-	private StyledText requestStyledText, responseStyledText;
-	private final StyledText reportingStyledText;
+	private static final String DEFAULT_SKELETON = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+	private static final String COMMENT_NO_WSDL = "<!-- No skeleton could be generated (no WSDL) -->";
+	private static final String COMMENT_INVALID_WSDL = "<!-- No skeleton could be generated (invalid WSDL) -->";
+
+	private StyledText requestStyledText, responseStyledText, reportingStyledText;
 	private TableViewer requestPropertiesViewer, responsePropertiesViewer, requestAttachmentsViewer, responseAttachmentsViewer;
+	private ProgressBar reportingProgressBar;
 	private final Text itfText, srvText, edptText;
-	private final Button showWsdlButton, refreshDataButton;
+	private final Button showWsdlButton, refreshDataButton, sendButton;
 	private final ComboViewer operationViewer;
 	private final FilesLabelProvider filesLabelProvider;
+	private Image sendImg;
 
 	private final PetalsFacade petalsFacade;
 	private Description targetServiceDescription;
@@ -116,7 +122,7 @@ public class RequestTab extends Composite {
 	 * @param petalsFacade
 	 * @param parent
 	 */
-	public RequestTab( Composite parent, PetalsFacade petalsFacade ) {
+	public RequestTab( Composite parent, PetalsFacade petalsFacade, final ColorCacheManager colorManager ) {
 
 		// Root elements
 		super( parent, SWT.NONE );
@@ -125,6 +131,7 @@ public class RequestTab extends Composite {
 
 		this.filesLabelProvider = new FilesLabelProvider();
 		this.petalsFacade = petalsFacade;
+		this.sendImg = SwtUtils.loadImage( "/send2.png" );
 
 
 	    // Create the widgets for the target service
@@ -230,41 +237,41 @@ public class RequestTab extends Composite {
         sashForm.setWeights( new int[] { 50, 50 });
 
 
-        // Add a link to clear the fields
-        Link clearAllFields = new Link( this, SWT.NONE );
-        clearAllFields.setText( "<A>Clear All the Fields</A>" );
-        clearAllFields.setLayoutData( new GridData( SWT.END, SWT.CENTER, true, false ));
-        clearAllFields.addMouseListener( new MouseAdapter() {
-        	@Override
-        	public void mouseDown( MouseEvent e ) {
-        		clearAllFields();
-        	}
-		});
-
-
-        // Add buttons to send the request and report errors
+        // Add buttons to send the request...
         Group sendGroup = new Group( this, SWT.SHADOW_ETCHED_OUT );
-        sendGroup.setLayout( new GridLayout( 3, false ));
-        sendGroup.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
+        GridLayoutFactory.swtDefaults().numColumns( 3 ).applyTo( sendGroup );
+        GridDataFactory.swtDefaults().grab( true, false ).align( SWT.FILL, SWT.END ).indent( 0, 8 ).applyTo( sendGroup );
         sendGroup.setText( "Message Sending" );
 
         Composite metaComposite = new Composite( sendGroup, SWT.NONE );
         GridLayoutFactory.swtDefaults().numColumns( 2 ).margins( 5, 3 ).spacing( 5, 10 ).applyTo( metaComposite );
 
-        Button sendSyncButton = new Button( metaComposite, SWT.CHECK );
-        GridDataFactory.swtDefaults().span( 2, 1 ).applyTo( sendSyncButton );
-        sendSyncButton.setText( "Send Synchroneously" );
+        Button syncButton = new Button( metaComposite, SWT.CHECK );
+        GridDataFactory.swtDefaults().span( 2, 1 ).applyTo( syncButton );
+        syncButton.setText( "Send Synchroneously" );
 
         new Label( metaComposite, SWT.NONE ).setText( "Timeout:" );
         Spinner timeoutSpinner = new Spinner( metaComposite, SWT.BORDER );
         timeoutSpinner.setValues( 3000, 0, Integer.MAX_VALUE, 0, 1000, 100 );
 
-        Button sendButton = new Button( sendGroup, SWT.PUSH );
-        GridDataFactory.swtDefaults().grab( false, true ).align( SWT.BEGINNING, SWT.FILL ).hint( 90, SWT.DEFAULT ).applyTo( sendButton );
-        sendButton.setText( "Send" );
+        this.sendButton = new Button( sendGroup, SWT.PUSH );
+        GridDataFactory.swtDefaults().grab( false, true ).align( SWT.BEGINNING, SWT.FILL ).applyTo( this.sendButton );
+        this.sendButton.setText( "Send  " );
+        this.sendButton.setToolTipText( "Send the Request to the Target Service" );
+        this.sendButton.setImage( this.sendImg );
 
-        this.reportingStyledText = new StyledText( sendGroup, SWT.MULTI );
-        GridDataFactory.fillDefaults().span( 1, 2 ).grab( true, true ).applyTo( this.reportingStyledText );
+
+        // ... and to display reports
+        Composite reportingComposite = new Composite( sendGroup, SWT.NONE );
+        GridLayoutFactory.swtDefaults().margins( 25, 8 ).applyTo( reportingComposite );
+        GridDataFactory.fillDefaults().span( 1, 2 ).grab( true, true ).align( SWT.FILL, SWT.END ).applyTo( reportingComposite );
+
+        this.reportingStyledText = new StyledText( reportingComposite, SWT.MULTI );
+        this.reportingStyledText.setLayoutData( new GridData( GridData.FILL_BOTH ));
+
+        this.reportingProgressBar = new ProgressBar( reportingComposite, SWT.INDETERMINATE );
+        this.reportingProgressBar.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
+        this.reportingProgressBar.setVisible( false );
 
 
         // Add remaining listeners
@@ -275,7 +282,7 @@ public class RequestTab extends Composite {
 
 				StyledText st = (StyledText) e.widget;
 				List<XmlRegion> regions = xmlRegionAnalyzer.analyzeXml( st.getText());
-				StyleRange[] styleRanges = SwtUtils.computeStyleRanges( regions );
+				StyleRange[] styleRanges = SwtUtils.computeStyleRanges( regions, colorManager );
 				st.setStyleRanges( styleRanges );
 			}
 		};
@@ -287,19 +294,24 @@ public class RequestTab extends Composite {
 			@Override
 			public void selectionChanged( SelectionChangedEvent e ) {
 
-				Operation op = (Operation) ((IStructuredSelection) e.getSelection()).getFirstElement();
-				QName itfName = (QName) RequestTab.this.itfText.getData();
 				String requestPayload = null;
-				try {
-					requestPayload = Utils.generateXmlSkeleton( RequestTab.this.targetServiceDescription, itfName, op.getQName(), true );
+				if( ! e.getSelection().isEmpty()) {
+					Operation op = (Operation) ((IStructuredSelection) e.getSelection()).getFirstElement();
+					QName itfName = (QName) RequestTab.this.itfText.getData();
+					try {
+						requestPayload = Utils.generateXmlSkeleton(
+								RequestTab.this.targetServiceDescription,
+								itfName, op.getQName(), true );
 
-				} catch( Exception e1 ) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					} catch( Exception e1 ) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+						requestPayload = DEFAULT_SKELETON + COMMENT_INVALID_WSDL;
+					}
+
+				} else {
+					requestPayload = DEFAULT_SKELETON + COMMENT_NO_WSDL;
 				}
-
-				if( requestPayload == null )
-					requestPayload = "<?xml ?>";
 
 				RequestTab.this.requestStyledText.setText( requestPayload );
 				RequestTab.this.responseStyledText.setText( "" );
@@ -316,7 +328,10 @@ public class RequestTab extends Composite {
 	@Override
 	public void dispose() {
 		super.dispose();
+
 		this.filesLabelProvider.dispose();
+		if( this.sendImg != null && ! this.sendImg.isDisposed())
+			this.sendImg.dispose();
 	}
 
 
@@ -367,7 +382,7 @@ public class RequestTab extends Composite {
 	/**
 	 * Clears all the fields.
 	 */
-	public void clearAllFields() {
+	private void clearAllFields() {
 
 		this.requestStyledText.setText( "" );
 		this.requestAttachments.clear();
@@ -380,6 +395,27 @@ public class RequestTab extends Composite {
 		this.responseAttachmentsViewer.refresh();
 		this.responsePropertiesViewer.setInput( Collections.emptyMap());
 		this.responsePropertiesViewer.refresh();
+	}
+
+
+	/**
+	 * Updates the progress report part.
+	 * <p>
+	 * If the description is not null, this disables the "send" button, shows the action description and activates a progress bar.
+	 * Otherwise, the "send" button is enabled, and no report is shown anymore.
+	 * </p>
+	 *
+	 * @param description the action's description or null to stop reporting information
+	 */
+	private void updateProgressReport( String description ) {
+
+		boolean shown = description != null;
+		this.sendButton.setEnabled( shown );
+		this.reportingProgressBar.setVisible( shown );
+
+		this.reportingStyledText.setStyleRanges( new StyleRange[ 0 ]);
+		this.reportingStyledText.setText( description != null ? description : "" );
+		this.reportingStyledText.getParent().layout();
 	}
 
 
@@ -410,6 +446,10 @@ public class RequestTab extends Composite {
 				RequestTab.this.operationViewer.getCCombo().setVisibleItemCount( ops.isEmpty() ? 5 : ops.size());
 				if( ops.size() > 0 )
 					RequestTab.this.operationViewer.setSelection( new StructuredSelection( ops.get( 0 )));
+				else
+					RequestTab.this.operationViewer.getCCombo().notifyListeners( SWT.Selection, new Event());
+
+				updateProgressReport( null );
 			}
 		};
 
@@ -448,6 +488,7 @@ public class RequestTab extends Composite {
 		};
 
 		// Start communications with Petals
+		updateProgressReport( "Retrieving the WSDL description..." );
 		new Thread( petalsRunnable ).start();
 	}
 
@@ -468,7 +509,7 @@ public class RequestTab extends Composite {
 		container.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
 		new Label( container, SWT.NONE ).setText( "Request - XML Payload" );
-		this.requestStyledText = new StyledText( container, SWT.BORDER | SWT.MULTI );
+		this.requestStyledText = new StyledText( container, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL );
 		this.requestStyledText.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
 
@@ -603,7 +644,7 @@ public class RequestTab extends Composite {
 		container.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
 		new Label( container, SWT.NONE ).setText( "Response - XML Payload" );
-		this.responseStyledText = new StyledText( container, SWT.BORDER | SWT.MULTI );
+		this.responseStyledText = new StyledText( container, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL );
 		this.responseStyledText.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
 

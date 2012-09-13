@@ -23,6 +23,8 @@ package org.ow2.petals.engine.client.misc;
 import java.io.File;
 import java.util.prefs.Preferences;
 
+import org.eclipse.swt.graphics.RGB;
+
 /**
  * The preferences manager.
  * @author Vincent Zurczak - Linagora
@@ -30,6 +32,13 @@ import java.util.prefs.Preferences;
 public class PreferencesManager {
 
 	public static final PreferencesManager INSTANCE = new PreferencesManager();
+
+	public final static String COLOR_COMMENT = "prefs.color.comment";
+	public final static String COLOR_MARKUP = "prefs.color.markup";
+	public final static String COLOR_ATTRIBUTE = "prefs.color.attribute";
+	public final static String COLOR_INSTRUCTION = "prefs.color.instruction";
+	public final static String COLOR_CDATA = "prefs.color.cdata";
+	public final static String COLOR_ATTRIBUTE_VALUE = "prefs.color.attribute-value";
 
 	private final static String HISTORY_DIR = "prefs.history.dir";
 	private final static String DEFAULT_TIMEOUT = "prefs.default.timeout";
@@ -56,7 +65,7 @@ public class PreferencesManager {
 	/**
 	 * @param f the directory that contains the history
 	 */
-	public void setHistoryDirectory( File f ) {
+	public void saveHistoryDirectory( File f ) {
 		getPreferences().put( HISTORY_DIR, f != null ? f.getAbsolutePath() : null );
 	}
 
@@ -72,8 +81,68 @@ public class PreferencesManager {
 	/**
 	 * @param timeout the default timeout
 	 */
-	public void setDefaultTimeout( Long timeout ) {
-		getPreferences().putLong( DEFAULT_TIMEOUT, timeout == null ? 3000 : timeout );
+	public void saveDefaultTimeout( Long timeout ) {
+		if( timeout == null )
+			getPreferences().remove( DEFAULT_TIMEOUT );
+		else
+			getPreferences().putLong( DEFAULT_TIMEOUT, timeout );
+	}
+
+
+	/**
+	 * Gets the color for a given XML region.
+	 * @param colorKey the key of the color (class constants)
+	 * @return a non-null RGB
+	 */
+	public RGB getColor( String colorKey ) {
+
+		RGB result = null;
+
+		// Look at the preferences
+		String s = getPreferences().get( colorKey, null );
+		if( s != null ) {
+			String[] parts = s.split( "\\|" );
+			if( parts.length > 2 ) {
+				int red = Integer.valueOf( parts[ 0 ]);
+				int green = Integer.valueOf( parts[ 1 ]);
+				int blue = Integer.valueOf( parts[ 2 ]);
+				result = new RGB( red, green, blue );
+			}
+		}
+
+		// Default value?
+		if( result == null ) {
+			if( COLOR_COMMENT.equals( colorKey ))
+				result = new RGB( 100, 95, 213 );
+			else if( COLOR_MARKUP.equals( colorKey ))
+				result = new RGB( 63, 127, 127 );
+			else if( COLOR_ATTRIBUTE.equals( colorKey ))
+				result = new RGB( 127, 0, 171 );
+			else if( COLOR_ATTRIBUTE_VALUE.equals( colorKey ))
+				result = new RGB( 42, 58, 255 );
+			else if( COLOR_CDATA.equals( colorKey ))
+				result = new RGB( 210, 163, 61 );
+			else
+				result = new RGB( 0, 0, 0 );
+		}
+
+		return result;
+	}
+
+
+	/**
+	 * Saves a color in the preferences.
+	 * @param colorKey the key of the color (class constants)
+	 * @param color a RGB value or null to restore the default value
+	 */
+	public void saveColor( String colorKey, RGB color ) {
+
+		if( color == null ) {
+			getPreferences().remove( colorKey );
+		} else {
+			String s = color.red + "|" + color.green + "|" + color.blue;
+			getPreferences().put( colorKey, s );
+		}
 	}
 
 
