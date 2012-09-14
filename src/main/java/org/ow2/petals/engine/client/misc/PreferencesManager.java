@@ -24,6 +24,7 @@ import java.io.File;
 import java.util.prefs.Preferences;
 
 import org.eclipse.swt.graphics.RGB;
+import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion.XmlRegionType;
 
 /**
  * The preferences manager.
@@ -31,17 +32,14 @@ import org.eclipse.swt.graphics.RGB;
  */
 public class PreferencesManager {
 
-	public static final PreferencesManager INSTANCE = new PreferencesManager();
+	public final static PreferencesManager INSTANCE = new PreferencesManager();
+	public final static String BOLD = "bold";	 	//$NON-NLS-N1
+	public final static String ITALIC = "italic";  	//$NON-NLS-N1
+	public final static String UNDERLINE = "underline";		 //$NON-NLS-N1
 
-	public final static String COLOR_COMMENT = "prefs.color.comment";
-	public final static String COLOR_MARKUP = "prefs.color.markup";
-	public final static String COLOR_ATTRIBUTE = "prefs.color.attribute";
-	public final static String COLOR_INSTRUCTION = "prefs.color.instruction";
-	public final static String COLOR_CDATA = "prefs.color.cdata";
-	public final static String COLOR_ATTRIBUTE_VALUE = "prefs.color.attribute-value";
-
-	private final static String HISTORY_DIR = "prefs.history.dir";
-	private final static String DEFAULT_TIMEOUT = "prefs.default.timeout";
+	private final static String HISTORY_DIR = "prefs.history.dir";	 //$NON-NLS-N1
+	private final static String DEFAULT_TIMEOUT = "prefs.default.timeout";	 //$NON-NLS-N1
+	private final static String WRAP_INSTEAD_OF_SCROLLING = "prefs.wrap.instead.of.scrolling";	 //$NON-NLS-N1
 
 
 
@@ -66,37 +64,41 @@ public class PreferencesManager {
 	 * @param f the directory that contains the history
 	 */
 	public void saveHistoryDirectory( File f ) {
-		getPreferences().put( HISTORY_DIR, f != null ? f.getAbsolutePath() : null );
+		if( f == null )
+			getPreferences().remove( HISTORY_DIR );
+		else
+			getPreferences().put( HISTORY_DIR, f.getAbsolutePath());
 	}
 
 
 	/**
 	 * @return the default timeout (3000 if not overwritten)
 	 */
-	public long getDefaultTimeout() {
-		return getPreferences().getLong( DEFAULT_TIMEOUT, 3000 );
+	public int getDefaultTimeout() {
+		return getPreferences().getInt( DEFAULT_TIMEOUT, 3000 );
 	}
 
 
 	/**
 	 * @param timeout the default timeout
 	 */
-	public void saveDefaultTimeout( Long timeout ) {
+	public void saveDefaultTimeout( Integer timeout ) {
 		if( timeout == null )
 			getPreferences().remove( DEFAULT_TIMEOUT );
 		else
-			getPreferences().putLong( DEFAULT_TIMEOUT, timeout );
+			getPreferences().putInt( DEFAULT_TIMEOUT, timeout );
 	}
 
 
 	/**
 	 * Gets the color for a given XML region.
-	 * @param colorKey the key of the color (class constants)
+	 * @param xr a XML region
 	 * @return a non-null RGB
 	 */
-	public RGB getColor( String colorKey ) {
+	public RGB getXmlRegionColor( XmlRegionType xr ) {
 
 		RGB result = null;
+		String colorKey = xr.toString() + ".color";
 
 		// Look at the preferences
 		String s = getPreferences().get( colorKey, null );
@@ -112,18 +114,26 @@ public class PreferencesManager {
 
 		// Default value?
 		if( result == null ) {
-			if( COLOR_COMMENT.equals( colorKey ))
-				result = new RGB( 100, 95, 213 );
-			else if( COLOR_MARKUP.equals( colorKey ))
-				result = new RGB( 63, 127, 127 );
-			else if( COLOR_ATTRIBUTE.equals( colorKey ))
-				result = new RGB( 127, 0, 171 );
-			else if( COLOR_ATTRIBUTE_VALUE.equals( colorKey ))
-				result = new RGB( 42, 58, 255 );
-			else if( COLOR_CDATA.equals( colorKey ))
-				result = new RGB( 210, 163, 61 );
-			else
-				result = new RGB( 0, 0, 0 );
+			switch( xr ) {
+				case ATTRIBUTE:
+					result = new RGB( 127, 0, 171 );
+					break;
+				case ATTRIBUTE_VALUE:
+					result = new RGB( 42, 58, 255 );
+					break;
+				case CDATA:
+					result = new RGB( 210, 163, 61 );
+					break;
+				case COMMENT:
+					result = new RGB( 100, 95, 213 );
+					break;
+				case MARKUP:
+					result = new RGB( 63, 127, 127 );
+					break;
+				default:
+					result = new RGB( 0, 0, 0 );
+					break;
+			}
 		}
 
 		return result;
@@ -132,17 +142,61 @@ public class PreferencesManager {
 
 	/**
 	 * Saves a color in the preferences.
-	 * @param colorKey the key of the color (class constants)
+	 * @param xr a XML region
 	 * @param color a RGB value or null to restore the default value
 	 */
-	public void saveColor( String colorKey, RGB color ) {
+	public void saveXmlRegionColor( XmlRegionType xr, RGB color ) {
 
+		String colorKey = xr.toString() + ".color";
 		if( color == null ) {
 			getPreferences().remove( colorKey );
 		} else {
 			String s = color.red + "|" + color.green + "|" + color.blue;
 			getPreferences().put( colorKey, s );
 		}
+	}
+
+
+	/**
+	 * @param xr a XML region
+	 * @param styleName a style name (e.g. bold, italic)
+	 * @return true if this style must be enabled, false otherwise
+	 */
+	public boolean getXmlRegionStyle( XmlRegionType xr, String styleName ) {
+		String colorKey = xr.toString() + "." + styleName;
+		return getPreferences().getBoolean( colorKey, false );
+	}
+
+
+	/**
+	 * Saves a style in the preferences.
+	 * @param xr a XML region
+	 * @param styleName a style name (e.g. bold, italic)
+	 * @param value the value to set (null to get back to default)
+	 */
+	public void saveXmlRegionStyle( XmlRegionType xr, String styleName, Boolean value ) {
+
+		String colorKey = xr.toString() + "." + styleName;
+		if( value == null )
+			getPreferences().remove( colorKey );
+		else
+			getPreferences().putBoolean( colorKey, value );
+	}
+
+
+	/**
+	 * @return true if styled texts should wrap text instead of displaying scroll bars
+	 */
+	public boolean wrapInsteadOfScrolling() {
+		return getPreferences().getBoolean( WRAP_INSTEAD_OF_SCROLLING, false );
+	}
+
+
+	/**
+	 * @param wrap true to wrap text in styled texts, false to show scroll bars instead
+	 */
+	public void saveWrapInsteadOfScrolling( boolean wrap ) {
+		getPreferences().putBoolean( WRAP_INSTEAD_OF_SCROLLING, wrap );
 	}
 
 

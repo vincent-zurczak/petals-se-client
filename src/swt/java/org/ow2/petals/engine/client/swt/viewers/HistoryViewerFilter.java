@@ -18,23 +18,44 @@
  *
  *****************************************************************************/
 
-package org.ow2.petals.engine.client.swt.manual;
+package org.ow2.petals.engine.client.swt.viewers;
 
-import org.ow2.petals.engine.client.swt.ClientApplication;
+import java.io.File;
+
+import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.jface.viewers.ViewerFilter;
 
 /**
- * A class to test manually the user interface.
+ * A viewer filter for the history.
  * @author Vincent Zurczak - Linagora
  */
-public class Main {
+public class HistoryViewerFilter extends ViewerFilter {
 
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
+	private String searchText;
 
-        ClientApplication app = new ClientApplication( new MockPetalsFacade( false, true ));
-        app.setBlockOnOpen( true );
-        app.open();
-    }
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.jface.viewers.ViewerFilter
+	 * #select(org.eclipse.jface.viewers.Viewer, java.lang.Object, java.lang.Object)
+	 */
+	@Override
+	public boolean select( Viewer viewer, Object parentElement, Object element ) {
+
+		boolean result = true;
+		if( element instanceof File
+				&& this.searchText != null ) {
+			result = ((File) element).getName().contains( this.searchText );
+		}
+
+		return result;
+	}
+
+
+	/**
+	 * @param searchText the search text to set
+	 */
+	public void setSearchText( String searchText ) {
+		this.searchText = searchText;
+	}
 }

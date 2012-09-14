@@ -42,9 +42,9 @@ public class ServiceRegistryLabelProvider extends ColumnLabelProvider {
 	 * Constructor.
 	 */
 	public ServiceRegistryLabelProvider() {
-		this.itfImage = SwtUtils.loadImage( "/contract.gif" );
-		this.srvImage = SwtUtils.loadImage( "/service.gif" );
-		this.edptImage = SwtUtils.loadImage( "/Endpoint_3.gif" );
+		this.itfImage = SwtUtils.loadImage( "/contract_16x16.gif" );
+		this.srvImage = SwtUtils.loadImage( "/service_16x16.gif" );
+		this.edptImage = SwtUtils.loadImage( "/endpoint_16x16.gif" );
 	}
 
 

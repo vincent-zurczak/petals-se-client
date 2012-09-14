@@ -20,7 +20,6 @@
 
 package org.ow2.petals.engine.client.swt.syntaxhighlighting;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -37,7 +36,6 @@ import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion.XmlRegionTy
 public class ColorCacheManager {
 
 	private final Map<XmlRegionType,Color> regionTypeTocolor;
-	private final Map<String,XmlRegionType> prefToXmlRegionType;
 
 
 	/**
@@ -46,30 +44,20 @@ public class ColorCacheManager {
 	public ColorCacheManager() {
 
 		this.regionTypeTocolor = new ConcurrentHashMap<XmlRegion.XmlRegionType,Color> ();
-		this.prefToXmlRegionType = new HashMap<String, XmlRegion.XmlRegionType> ();
-
-		this.prefToXmlRegionType.put( PreferencesManager.COLOR_COMMENT, XmlRegionType.COMMENT );
-		this.prefToXmlRegionType.put( PreferencesManager.COLOR_MARKUP, XmlRegionType.MARKUP );
-		this.prefToXmlRegionType.put( PreferencesManager.COLOR_ATTRIBUTE, XmlRegionType.ATTRIBUTE );
-		this.prefToXmlRegionType.put( PreferencesManager.COLOR_ATTRIBUTE_VALUE, XmlRegionType.ATTRIBUTE_VALUE );
-		this.prefToXmlRegionType.put( PreferencesManager.COLOR_CDATA, XmlRegionType.CDATA );
-		this.prefToXmlRegionType.put( PreferencesManager.COLOR_INSTRUCTION, XmlRegionType.INSTRUCTION );
-
-		for( String colorKey : this.prefToXmlRegionType.keySet())
-			updateColor( colorKey );
+		for( XmlRegionType xr : XmlRegionType.values())
+			updateColor( xr );
 	}
 
 
 	/**
-	 * Updates a color in the cache.
+	 * Updates a color in the cache from the preferences.
 	 */
-	public void updateColor( String colorKey ) {
+	public void updateColor( XmlRegionType xr ) {
 
-		XmlRegionType xrt = this.prefToXmlRegionType.get( colorKey );
-		RGB rgb = PreferencesManager.INSTANCE.getColor( colorKey );
-		if( xrt != null && rgb != null ) {
+		RGB rgb = PreferencesManager.INSTANCE.getXmlRegionColor( xr );
+		if( rgb != null ) {
 			Color newColor = new Color( Display.getDefault(), rgb );
-			Color previousColor = this.regionTypeTocolor.put( xrt, newColor );
+			Color previousColor = this.regionTypeTocolor.put( xr, newColor );
 			if( previousColor != null )
 				previousColor.dispose();
 		}
@@ -96,15 +84,5 @@ public class ColorCacheManager {
 	 */
 	public Color getColor( XmlRegionType xrt ) {
 		return this.regionTypeTocolor.get( xrt );
-	}
-
-
-	/**
-	 * @param xrt a XML region type
-	 * @return a color (can be null)
-	 */
-	public Color getColor( String colorKey ) {
-		XmlRegionType xrt = this.prefToXmlRegionType.get( colorKey );
-		return xrt != null ? this.regionTypeTocolor.get( xrt ) : null;
 	}
 }

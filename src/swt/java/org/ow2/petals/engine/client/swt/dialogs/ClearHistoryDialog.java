@@ -21,38 +21,34 @@
 package org.ow2.petals.engine.client.swt.dialogs;
 
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
-import org.ow2.petals.engine.client.swt.SwtUtils;
-import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
+import org.eclipse.swt.widgets.Spinner;
 
 /**
- * A dialog to show the content of a WSDL description.
+ * A dialog to tailor the history clearance.
  * @author Vincent Zurczak - Linagora
  */
-public class ShowWsdlDialog extends Dialog {
+public class ClearHistoryDialog extends Dialog {
 
-	private final String wsdlContent;
-	private final ColorCacheManager colorManager;
+	private int days = 3;
 
 
 	/**
 	 * Constructor.
 	 * @param parentShell
-	 * @param wsdlContent
-	 * @param colorManager
 	 */
-	public ShowWsdlDialog( Shell parentShell, String wsdlContent, ColorCacheManager colorManager ) {
+	public ClearHistoryDialog( Shell parentShell ) {
 		super( parentShell );
-		this.wsdlContent = wsdlContent;
-		this.colorManager = colorManager;
 	}
 
 
@@ -64,15 +60,29 @@ public class ShowWsdlDialog extends Dialog {
 	@Override
 	protected Control createDialogArea( Composite parent ) {
 
-		getShell().setText( "WSDL Content" );
+		getShell().setText( "Clear the History older than..." );
 
 		Composite container = new Composite( parent, SWT.NONE );
 		container.setBackground( getShell().getDisplay().getSystemColor( SWT.COLOR_WHITE ));
-		container.setLayout( new GridLayout( 2, false ));
+		GridLayoutFactory.swtDefaults().numColumns( 3 ).margins( 10, 10 ).applyTo( container );
 		container.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
-		StyledText styledText = SwtUtils.createXmlViewer( container, this.colorManager );
-		styledText.setText( this.wsdlContent );
+		Label l = new Label( container, SWT.NONE );
+		l.setText( "Clear the history older than..." );
+		l.setBackground( getShell().getDisplay().getSystemColor( SWT.COLOR_WHITE ));
+
+		Spinner daySpinner = new Spinner( container, SWT.BORDER );
+		daySpinner.setValues( this.days, 1, Integer.MAX_VALUE, 0, 1, 10 );
+		daySpinner.addModifyListener( new ModifyListener() {
+			@Override
+			public void modifyText( ModifyEvent e ) {
+				ClearHistoryDialog.this.days = ((Spinner) e.widget).getSelection();
+			}
+		});
+
+		l = new Label( container, SWT.NONE );
+		l.setText( " days." );
+		l.setBackground( getShell().getDisplay().getSystemColor( SWT.COLOR_WHITE ));
 
 		return container;
 	}
@@ -91,22 +101,17 @@ public class ShowWsdlDialog extends Dialog {
 		parent.setBackground( getShell().getDisplay().getSystemColor( SWT.COLOR_WHITE ));
 
 		Button b = getButton( Dialog.OK );
-		if( b != null ) {
+		if( b != null )
 			b.setFocus();
-			b.setEnabled( false );
-		}
 
 		return control;
 	}
 
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.eclipse.jface.dialogs.Dialog
-	 * #getInitialSize()
+	/**
+	 * @return the days
 	 */
-	@Override
-	protected Point getInitialSize() {
-		return new Point( 500, 300 );
+	public int getDays() {
+		return this.days;
 	}
 }

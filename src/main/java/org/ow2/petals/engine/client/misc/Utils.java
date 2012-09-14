@@ -198,13 +198,43 @@ public class Utils {
 
 
 	/**
+	 * Loads a resource from the class loader and returns its content as a string.
+	 * @param resourceLocation the resource location
+	 * @return a string, never null
+	 * @throws IOException
+	 */
+	public static String loadResource( String resourceLocation ) {
+
+		String result = null;
+		InputStream in = null;
+		try {
+			in = Utils.class.getResourceAsStream( resourceLocation );
+			if( in != null ) {
+				ByteArrayOutputStream os = new ByteArrayOutputStream();
+				copyStream( in, os );
+				result = os.toString( "UTF-8" );
+			}
+
+		} catch( Exception e ) {
+			// TODO
+
+		} finally {
+			closeStreamQuietly( in );
+		}
+
+		return result != null ? result : "";
+	}
+
+
+	/**
 	 * Closes a stream quietly.
 	 * @param stream the stream to close (not null)
 	 */
 	public static void closeStreamQuietly( InputStream stream ) {
 
 		try {
-			stream.close();
+			if( stream != null )
+				stream.close();
 		} catch( IOException e ) {
 			// nothing
 		}

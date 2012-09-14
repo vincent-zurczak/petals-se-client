@@ -36,12 +36,11 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.events.FocusAdapter;
-import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -51,10 +50,12 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.RequestMessageBeanUtils;
-import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
+import org.ow2.petals.engine.client.swt.SwtUtils;
+import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.viewers.HistoryContentProvider;
 import org.ow2.petals.engine.client.swt.viewers.HistoryLabelProvider;
+import org.ow2.petals.engine.client.swt.viewers.HistoryViewerFilter;
 
 /**
  * The history tab.
@@ -62,14 +63,18 @@ import org.ow2.petals.engine.client.swt.viewers.HistoryLabelProvider;
  */
 public class HistoryTab extends Composite {
 
+	private final static String SEARCH_TEXT = "Filter...";
+
 	private final TreeViewer historyViewer;
+	private final Image searchImage;
 
 
 	/**
 	 * Constructor.
 	 * @param parent
+	 * @param colorManager
 	 */
-	public HistoryTab( Composite parent ) {
+	public HistoryTab( Composite parent, ColorCacheManager colorManager ) {
 
 		// Root elements
 		super( parent, SWT.NONE );
@@ -81,29 +86,33 @@ public class HistoryTab extends Composite {
 		sashForm.setSashWidth( 5 );
 
 
-		// The "table" - which is a tree in fact
+		// The header, with the search bar
 		Composite container = new Composite( sashForm, SWT.NONE );
 	    container.setLayout( new GridLayout());
 	    container.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
 	    Composite subContainer = new Composite( container, SWT.NONE );
-		GridLayoutFactory.swtDefaults().margins( 0, 0 ).equalWidth( true ).numColumns( 2 ).applyTo( subContainer );
+		GridLayoutFactory.swtDefaults().margins( 0, 0 ).numColumns( 3 ).applyTo( subContainer );
 		subContainer.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
 
 		new Label( subContainer, SWT.NONE ).setText( "The Requests that were previously sent to Petals Services." );
-		final Text searchText = new Text( subContainer, SWT.SEARCH | SWT.ICON_SEARCH | SWT.ICON_CANCEL );
-		searchText.setText( "Search..." );
+		final Text searchText = new Text( subContainer, SWT.SINGLE | SWT.BORDER );
+		searchText.setText( SEARCH_TEXT );
 		GridDataFactory.swtDefaults().grab( true, false ).align( SWT.END, SWT.CENTER ).hint( 200, SWT.DEFAULT ).applyTo( searchText );
-		searchText.addFocusListener( new FocusAdapter() {
-			@Override
-			public void focusGained( FocusEvent e ) {
-				searchText.selectAll();
-			}
-		});
 
+		this.searchImage = SwtUtils.loadImage( "/search_16x16.png" );
+		Label l = new Label( subContainer, SWT.NONE );
+		l.setImage( this.searchImage );
+		GridDataFactory.swtDefaults().align( SWT.END, SWT.CENTER ).applyTo( l );
+
+
+		// The history viewer
 		this.historyViewer = new TreeViewer( container, SWT.BORDER | SWT.FULL_SELECTION | SWT.SINGLE );
 		this.historyViewer.setContentProvider( new HistoryContentProvider());
 		this.historyViewer.setLabelProvider( new HistoryLabelProvider());
+
+		final HistoryViewerFilter historyViewerFilter = new HistoryViewerFilter();
+		this.historyViewer.addFilter( historyViewerFilter );
 		this.historyViewer.setInput( PreferencesManager.INSTANCE.getHistoryDirectory());
 
 		this.historyViewer.getTree().setLayoutData( new GridData( GridData.FILL_BOTH ));
@@ -119,12 +128,12 @@ public class HistoryTab extends Composite {
 	    this.historyViewer.getTree().setLayout( layout );
 
 	    Link clearHistoryLink = new Link( container, SWT.NONE );
-	    clearHistoryLink.setText( "<a>Clear the History</a>" );
+	    clearHistoryLink.setText( "<a>Clear All the History</a>" );
 	    clearHistoryLink.setLayoutData( new GridData( SWT.END, SWT.CENTER, true, false ));
 	    clearHistoryLink.addMouseListener( new MouseAdapter() {
         	@Override
         	public void mouseDown( MouseEvent e ) {
-        		Utils.clearHistory( -1 );
+        		SwtUtils.clearHistoryWithProgressBar( getShell(), -1 );
         		refreshHistory();
         	}
 		});
@@ -137,9 +146,7 @@ public class HistoryTab extends Composite {
 
 		new Label( container, SWT.NONE ).setText( "Quick Overview of the XML Payload" );
 		new Label( container, SWT.NONE ).setText( "The Request Properties" );
-
-		final StyledText xmlPayloadStyledText = new StyledText( container, SWT.BORDER | SWT.READ_ONLY | SWT.MULTI );
-		xmlPayloadStyledText.setLayoutData( new GridData( GridData.FILL_BOTH ));
+		final StyledText xmlPayloadStyledText = SwtUtils.createXmlViewer( container, colorManager );
 
 
 		subContainer = new Composite( container, SWT.NONE );
@@ -243,11 +250,24 @@ public class HistoryTab extends Composite {
 			}
 		});
 
-	    searchText.addModifyListener( new ModifyListener() {
+	    searchText.addMouseListener( new MouseAdapter() {
 			@Override
-			public void modifyText(ModifyEvent arg0) {
+			public void mouseDown( MouseEvent e ) {
+				searchText.selectAll();
+			}
+		});
 
+		searchText.addModifyListener( new ModifyListener() {
+			@Override
+			public void modifyText( ModifyEvent e ) {
 
+				String txt = searchText.getText().trim();
+				if( txt.length() == 0 ) {
+					searchText.setText( SEARCH_TEXT );
+				} else {
+					historyViewerFilter.setSearchText( SEARCH_TEXT.equals( txt ) ? null : txt );
+					HistoryTab.this.historyViewer.refresh();
+				}
 			}
 		});
 	}
@@ -257,6 +277,22 @@ public class HistoryTab extends Composite {
 	 * Refreshes the history viewer.
 	 */
 	public void refreshHistory() {
+		this.historyViewer.setInput( PreferencesManager.INSTANCE.getHistoryDirectory());
 		this.historyViewer.refresh();
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.swt.widgets.Widget
+	 * #dispose()
+	 */
+	@Override
+	public void dispose() {
+
+		if( this.searchImage != null && ! this.searchImage.isDisposed())
+			this.searchImage.dispose();
+
+		super.dispose();
 	}
 }

@@ -22,16 +22,29 @@ package org.ow2.petals.engine.client.swt;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jface.dialogs.ProgressMonitorDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
+import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.ow2.petals.engine.client.misc.PreferencesManager;
+import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion;
+import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegionAnalyzer;
 
 /**
  * A set of utilities related to SWT.
@@ -62,7 +75,7 @@ public class SwtUtils {
 			try {
 				if( in != null )
 					in.close();
-			} catch (IOException e) {
+			} catch( IOException e ) {
 				// nothing
 			}
 		}
@@ -74,7 +87,7 @@ public class SwtUtils {
 	/**
 	 * Computes style ranges from XML regions.
 	 * @param regions an ordered list of XML regions
-	 * @param colorManager
+	 * @param colorManager a color manager
 	 * @return an ordered list of style ranges for SWT styled text
 	 */
 	public static StyleRange[] computeStyleRanges( List<XmlRegion> regions, ColorCacheManager colorManager ) {
@@ -82,17 +95,23 @@ public class SwtUtils {
 		List<StyleRange> styleRanges = new ArrayList<StyleRange> ();
 		for( XmlRegion xr : regions ) {
 
-			// The style itself depends on the region type
-			// In this example, we use colors from the system
+			// Define the style properties
 			StyleRange sr = new StyleRange();
 			sr.foreground = colorManager.getColor( xr.getXmlRegionType());
+			sr.underline = PreferencesManager.INSTANCE.getXmlRegionStyle( xr.getXmlRegionType(), PreferencesManager.UNDERLINE );
 
-			switch( xr.getXmlRegionType()) {
-		        case MARKUP:
-		        	sr.fontStyle = SWT.BOLD;
-		        	break;
-		        default: break;
-		    }
+			boolean bold = PreferencesManager.INSTANCE.getXmlRegionStyle( xr.getXmlRegionType(), PreferencesManager.BOLD );
+			boolean italic = PreferencesManager.INSTANCE.getXmlRegionStyle( xr.getXmlRegionType(), PreferencesManager.ITALIC );
+			if( italic ) {
+				if( bold )
+					sr.fontStyle = SWT.BOLD | SWT.ITALIC;
+				else
+					sr.fontStyle = SWT.ITALIC;
+
+			} else if( bold ) {
+				sr.fontStyle = SWT.BOLD;
+			}
+
 
 			// Define the position and limit
 			sr.start = xr.getStart();
@@ -102,5 +121,69 @@ public class SwtUtils {
 
 		StyleRange[] result = new StyleRange[ styleRanges.size()];
 		return styleRanges.toArray( result );
+	}
+
+
+	/**
+	 * Creates a XML viewer.
+	 * @param parent the parent
+	 * @param colorManager a color manager
+	 * @return a configured instance of styled text
+	 */
+	public static StyledText createXmlViewer( Composite parent, final ColorCacheManager colorManager ) {
+
+		// Each widget has its own analyzer
+		final XmlRegionAnalyzer xmlRegionAnalyzer = new XmlRegionAnalyzer();
+		int style = SWT.BORDER | SWT.MULTI;
+		style |= PreferencesManager.INSTANCE.wrapInsteadOfScrolling() ?  SWT.WRAP : SWT.V_SCROLL | SWT.H_SCROLL;
+
+		// Create the text
+		StyledText st = new StyledText( parent, style );
+		st.setLayoutData( new GridData( GridData.FILL_BOTH ));
+		st.addModifyListener( new ModifyListener() {
+			@Override
+			public void modifyText( ModifyEvent e ) {
+
+				StyledText st = (StyledText) e.widget;
+				List<XmlRegion> regions = xmlRegionAnalyzer.analyzeXml( st.getText());
+				StyleRange[] styleRanges = SwtUtils.computeStyleRanges( regions, colorManager );
+				st.setStyleRanges( styleRanges );
+			}
+		});
+
+		return st;
+	}
+
+
+	/**
+	 * Clears the history and shows a progress bar.
+	 * @param shell the parent shell
+	 * @param olderThan see {@link Utils#clearHistory(int)}
+	 */
+	public static void clearHistoryWithProgressBar( Shell shell, final int olderThan ) {
+
+		IRunnableWithProgress runnable = new IRunnableWithProgress() {
+			@Override
+			public void run( IProgressMonitor monitor )
+			throws InvocationTargetException, InterruptedException {
+
+				try {
+					monitor.beginTask( "Clearing the History...", IProgressMonitor.UNKNOWN );
+					Utils.clearHistory( olderThan );
+
+				} finally {
+					monitor.done();
+				}
+			}
+		};
+
+		ProgressMonitorDialog dlg = new ProgressMonitorDialog( shell );
+		dlg.setOpenOnRun( true );
+		try {
+			dlg.run( true, false, runnable );
+
+		} catch( Exception e ) {
+			// TODO
+		}
 	}
 }

@@ -50,7 +50,7 @@ public class AboutDialog extends Dialog {
 	 */
 	public AboutDialog( Shell parentShell ) {
 		super( parentShell );
-		this.petalsImg = SwtUtils.loadImage( "/petals-splash.png" );
+		this.petalsImg = SwtUtils.loadImage( "/petals_splash.png" );
 	}
 
 
@@ -106,7 +106,9 @@ public class AboutDialog extends Dialog {
 
 		Link visitUsLink = new Link( subContainer, SWT.NONE );
 		visitUsLink.setBackground( getShell().getDisplay().getSystemColor( SWT.COLOR_WHITE ));
-		visitUsLink.setText( "\nVisit Petals ESB at <a>http://petals.ow2.org</a>\nVisit Petals Link at <a>http://petalslink.com</a>" );
+		visitUsLink.setText( "\nVisit Petals ESB at <a>http://petals.ow2.org</a>\n" +
+				"Visit Petals Link at <a>http://petalslink.com</a>\n" +
+				"Visit Linagora at <a>http://linagora.com</a>" );
 
 		aboutLabel = new Label( subContainer, SWT.WRAP );
 		aboutLabel.setBackground( getShell().getDisplay().getSystemColor( SWT.COLOR_WHITE ));

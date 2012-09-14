@@ -4,7 +4,6 @@ package org.ow2.petals.engine.client.swt;
 import org.eclipse.jface.window.ApplicationWindow;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -14,7 +13,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.ow2.petals.engine.client.swt.dialogs.AboutDialog;
@@ -30,7 +28,7 @@ import org.ow2.petals.engine.client.ui.PetalsFacade;
  */
 public class ClientApplication extends ApplicationWindow {
 
-	private Image appli16, appli32, appli48, leftArrowImg, rightArrowImg;
+	private final Image appli16, appli32, appli48;
 	private final PetalsFacade petalsFacade;
 	private final ColorCacheManager colorManager;
 
@@ -39,32 +37,15 @@ public class ClientApplication extends ApplicationWindow {
 	/**
 	 * Constructor.
 	 * @param petalsFacade
-	 * @param parent
 	 */
-	public ClientApplication( PetalsFacade petalsFacade, Shell parent ) {
-		super( parent );
+	public ClientApplication( PetalsFacade petalsFacade ) {
+		super( null );
 		this.petalsFacade = petalsFacade;
 		this.colorManager = new ColorCacheManager();
 
-		try {
-			ImageData imgData = new ImageData( "./icons/appli_16x16.png" );
-			this.appli16 = new Image( Display.getDefault(), imgData );
-
-			imgData = new ImageData( "./icons/appli_32x32.png" );
-			this.appli32 = new Image( Display.getDefault(), imgData );
-
-			imgData = new ImageData( "./icons/appli_48x48.png" );
-			this.appli48 = new Image( Display.getDefault(), imgData );
-
-			imgData = new ImageData( "./icons/Arrow--Left.png" );
-			this.leftArrowImg = new Image( Display.getDefault(), imgData );
-
-			imgData = new ImageData( "./icons/Arrow--Right.png" );
-			this.rightArrowImg = new Image( Display.getDefault(), imgData );
-
-		} catch( Exception e ) {
-			// TODO...
-		}
+		this.appli16 = SwtUtils.loadImage( "/petals_16x16.png" );
+		this.appli32 = SwtUtils.loadImage( "/petals_32x32.png" );
+		this.appli48 = SwtUtils.loadImage( "/petals_48x48.png" );
 	}
 
 
@@ -86,12 +67,6 @@ public class ClientApplication extends ApplicationWindow {
 		if( this.appli48 != null && ! this.appli48.isDisposed())
 			this.appli48.dispose();
 
-		if( this.leftArrowImg != null && ! this.leftArrowImg.isDisposed())
-			this.leftArrowImg.dispose();
-
-		if( this.rightArrowImg != null && ! this.rightArrowImg.isDisposed())
-			this.rightArrowImg.dispose();
-
 		return result;
 	}
 
@@ -108,7 +83,7 @@ public class ClientApplication extends ApplicationWindow {
 		getShell().setText( "Petals Client" );
 		getShell().setBounds( Display.getCurrent().getBounds());
 		getShell().setMaximized( true );
-		// getShell().setImages( new Image[] { this.appli16, this.appli32, this.appli48 });
+		getShell().setImages( new Image[] { this.appli16, this.appli32, this.appli48 });
 
 		// Create the container
 		Composite container = new Composite( parent, SWT.NONE );
@@ -134,7 +109,7 @@ public class ClientApplication extends ApplicationWindow {
 	    tabItem = new TabItem( tabFolder, SWT.NONE );
 	    tabItem.setText( "History" );
         tabItem.setToolTipText( "The requests history" );
-	    tabItem.setControl( new HistoryTab( tabFolder ));
+	    tabItem.setControl( new HistoryTab( tabFolder, this.colorManager ));
 
 	    tabItem = new TabItem( tabFolder, SWT.NONE );
 	    tabItem.setText( "Preferences" );

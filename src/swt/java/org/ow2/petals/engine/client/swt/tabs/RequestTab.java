@@ -52,8 +52,6 @@ import org.eclipse.swt.custom.CCombo;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -74,6 +72,7 @@ import org.ow2.easywsdl.wsdl.api.Description;
 import org.ow2.easywsdl.wsdl.api.InterfaceType;
 import org.ow2.easywsdl.wsdl.api.Operation;
 import org.ow2.easywsdl.wsdl.api.WSDLReader;
+import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
 import org.ow2.petals.engine.client.model.ResponseMessageBean;
@@ -82,8 +81,6 @@ import org.ow2.petals.engine.client.swt.dialogs.KeyValueDialog;
 import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog;
 import org.ow2.petals.engine.client.swt.dialogs.ShowWsdlDialog;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
-import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion;
-import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegionAnalyzer;
 import org.ow2.petals.engine.client.swt.viewers.FilesLabelProvider;
 import org.ow2.petals.engine.client.swt.viewers.MessagePropertiesContentProvider;
 import org.ow2.petals.engine.client.swt.viewers.MessagePropertiesLabelProvider;
@@ -131,7 +128,7 @@ public class RequestTab extends Composite {
 
 		this.filesLabelProvider = new FilesLabelProvider();
 		this.petalsFacade = petalsFacade;
-		this.sendImg = SwtUtils.loadImage( "/send2.png" );
+		this.sendImg = SwtUtils.loadImage( "/send_64x64.png" );
 
 
 	    // Create the widgets for the target service
@@ -195,7 +192,7 @@ public class RequestTab extends Composite {
 	    this.operationViewer.setContentProvider( new ArrayContentProvider());
 	    this.operationViewer.setLabelProvider( new LabelProvider() {
 	    	@Override
-	    	public String getText(Object elt) {
+	    	public String getText( Object elt ) {
 	    		return elt instanceof Operation ? ((Operation) elt).getQName().getLocalPart() : "";
 	    	}
 	    });
@@ -208,10 +205,9 @@ public class RequestTab extends Composite {
 	    this.showWsdlButton.setEnabled( false );
 	    this.showWsdlButton.addListener( SWT.Selection, new Listener() {
 	    	@Override
-	    	public void handleEvent(Event arg0) {
-
+	    	public void handleEvent( Event e ) {
 	    		String text = "TODO";
-	    		new ShowWsdlDialog( getShell(), text ).open();
+	    		new ShowWsdlDialog( getShell(), text, colorManager ).open();
 	    	}
 	    });
 
@@ -232,8 +228,8 @@ public class RequestTab extends Composite {
 	    GridDataFactory.swtDefaults().align( SWT.FILL, SWT.FILL ).grab( true, true ).indent( 0, 10 ).applyTo( sashForm );
         sashForm.setSashWidth( 20 );
 
-        createRequestPart( sashForm );
-        createResponsePart( sashForm );
+        createRequestPart( sashForm, colorManager );
+        createResponsePart( sashForm, colorManager );
         sashForm.setWeights( new int[] { 50, 50 });
 
 
@@ -252,7 +248,8 @@ public class RequestTab extends Composite {
 
         new Label( metaComposite, SWT.NONE ).setText( "Timeout:" );
         Spinner timeoutSpinner = new Spinner( metaComposite, SWT.BORDER );
-        timeoutSpinner.setValues( 3000, 0, Integer.MAX_VALUE, 0, 1000, 100 );
+        int defaultTimeout = PreferencesManager.INSTANCE.getDefaultTimeout();
+        timeoutSpinner.setValues( defaultTimeout, 0, Integer.MAX_VALUE, 0, 1000, 100 );
 
         this.sendButton = new Button( sendGroup, SWT.PUSH );
         GridDataFactory.swtDefaults().grab( false, true ).align( SWT.BEGINNING, SWT.FILL ).applyTo( this.sendButton );
@@ -275,21 +272,6 @@ public class RequestTab extends Composite {
 
 
         // Add remaining listeners
-        final XmlRegionAnalyzer xmlRegionAnalyzer = new XmlRegionAnalyzer();
-		ModifyListener syntaxHighlightListener = new ModifyListener() {
-			@Override
-			public void modifyText( ModifyEvent e ) {
-
-				StyledText st = (StyledText) e.widget;
-				List<XmlRegion> regions = xmlRegionAnalyzer.analyzeXml( st.getText());
-				StyleRange[] styleRanges = SwtUtils.computeStyleRanges( regions, colorManager );
-				st.setStyleRanges( styleRanges );
-			}
-		};
-
-		this.requestStyledText.addModifyListener( syntaxHighlightListener );
-		this.responseStyledText.addModifyListener( syntaxHighlightListener );
-
 		this.operationViewer.addSelectionChangedListener( new ISelectionChangedListener() {
 			@Override
 			public void selectionChanged( SelectionChangedEvent e ) {
@@ -496,8 +478,9 @@ public class RequestTab extends Composite {
 	/**
 	 * Creates the request part.
 	 * @param parent
+	 * @param colorManager
 	 */
-	private void createRequestPart( SashForm parent ) {
+	private void createRequestPart( SashForm parent, ColorCacheManager colorManager ) {
 
 		SashForm sashForm = new SashForm( parent, SWT.VERTICAL );
 		sashForm.setLayoutData( new GridData( GridData.FILL_BOTH ));
@@ -509,8 +492,7 @@ public class RequestTab extends Composite {
 		container.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
 		new Label( container, SWT.NONE ).setText( "Request - XML Payload" );
-		this.requestStyledText = new StyledText( container, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL );
-		this.requestStyledText.setLayoutData( new GridData( GridData.FILL_BOTH ));
+		this.requestStyledText = SwtUtils.createXmlViewer( container, colorManager );
 
 
 		// The properties
@@ -631,8 +613,9 @@ public class RequestTab extends Composite {
 	/**
 	 * Creates a message part.
 	 * @param parent
+	 * @param colorManager
 	 */
-	private void createResponsePart( SashForm parent ) {
+	private void createResponsePart( SashForm parent, ColorCacheManager colorManager ) {
 
 		SashForm sashForm = new SashForm( parent, SWT.VERTICAL );
 		sashForm.setLayoutData( new GridData( GridData.FILL_BOTH ));
@@ -644,8 +627,7 @@ public class RequestTab extends Composite {
 		container.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
 		new Label( container, SWT.NONE ).setText( "Response - XML Payload" );
-		this.responseStyledText = new StyledText( container, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL );
-		this.responseStyledText.setLayoutData( new GridData( GridData.FILL_BOTH ));
+		this.responseStyledText = SwtUtils.createXmlViewer( container, colorManager );
 
 
 		// The properties

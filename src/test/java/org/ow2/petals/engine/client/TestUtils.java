@@ -28,6 +28,7 @@ import java.net.URL;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.ow2.petals.engine.client.misc.Utils;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -75,8 +76,7 @@ public class TestUtils {
 	        return doc;
 
         } finally {
-        	if( in != null )
-        		in.close();
+        	Utils.closeStreamQuietly( in );
         }
     }
 }

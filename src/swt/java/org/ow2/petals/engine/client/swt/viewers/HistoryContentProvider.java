@@ -63,7 +63,29 @@ public class HistoryContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public void inputChanged( Viewer viewer, Object oldInput, Object newInput) {
+
 		this.dateToFiles.clear();
+		if( newInput instanceof File ) {
+			File[] files = ((File) newInput).listFiles( new FileFilter() {
+				@Override
+				public boolean accept( File f ) {
+					return f.isFile() && f.getName().toLowerCase().endsWith( ".msg" );
+				}
+			});
+
+			if( files != null ) {
+				for( File f : files ) {
+					Long day = findLastModificationDay( f );
+					List<File> associatedFiles = this.dateToFiles.get( day );
+					if( associatedFiles == null ) {
+						associatedFiles = new ArrayList<File> ();
+						this.dateToFiles.put( day, associatedFiles );
+					}
+
+					associatedFiles.add( f );
+				}
+			}
+		}
 	}
 
 
@@ -91,33 +113,7 @@ public class HistoryContentProvider implements ITreeContentProvider {
 	 */
 	@Override
 	public Object[] getElements( Object o ) {
-
-		Object[] result = new Object[ 0 ];
-		if( o instanceof File ) {
-			File[] files = ((File) o).listFiles( new FileFilter() {
-				@Override
-				public boolean accept( File f ) {
-					return f.isFile() && f.getName().toLowerCase().endsWith( ".msg" );
-				}
-			});
-
-			if( files != null ) {
-				for( File f : files ) {
-					Long day = findLastModificationDay( f );
-					List<File> associatedFiles = this.dateToFiles.get( day );
-					if( associatedFiles == null ) {
-						associatedFiles = new ArrayList<File> ();
-						this.dateToFiles.put( day, associatedFiles );
-					}
-
-					associatedFiles.add( f );
-				}
-			}
-
-			result = this.dateToFiles.keySet().toArray();
-		}
-
-		return result;
+		return this.dateToFiles.keySet().toArray();
 	}
 
 
