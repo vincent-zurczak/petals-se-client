@@ -24,11 +24,16 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.util.GregorianCalendar;
+import java.util.LinkedHashSet;
+import java.util.Properties;
+import java.util.Set;
 
 import javax.xml.namespace.QName;
 import javax.xml.transform.Source;
@@ -43,6 +48,7 @@ import org.ow2.easywsdl.wsdl.WSDLFactory;
 import org.ow2.easywsdl.wsdl.api.Description;
 import org.ow2.easywsdl.wsdl.api.InterfaceType;
 import org.ow2.easywsdl.wsdl.api.Operation;
+import org.ow2.petals.engine.client.model.RequestMessageBean;
 import org.w3c.dom.Document;
 
 import com.ebmwebsourcing.easycommons.xml.XMLHelper;
@@ -198,6 +204,32 @@ public class Utils {
 
 
 	/**
+	 * Copies the content from inputFile into outputFile.
+	 *
+	 * @param inputFile (must exist and be a file, not a directory)
+	 * @param outputFile will be created if it does not exist
+	 * @throws IOException
+	 */
+	public static void copyFile( File inputFile, File outputFile ) throws IOException {
+
+		InputStream is = null;
+		OutputStream os = null;
+		try {
+			is = new FileInputStream( inputFile );
+			os = new FileOutputStream( outputFile );
+			copyStream( is, os );
+
+		} finally {
+			if( is != null )
+				is.close();
+
+			if( os != null )
+				os.close();
+		}
+	}
+
+
+	/**
 	 * Loads a resource from the class loader and returns its content as a string.
 	 * @param resourceLocation the resource location
 	 * @return a string, never null
@@ -280,5 +312,70 @@ public class Utils {
 	 */
 	public static boolean isEmptyString( String s ) {
 		return s == null || s.trim().length() == 0;
+	}
+
+
+	/**
+	 * Saves a request.
+	 * @param target a file (will be overwritten if it already exists)
+	 * <p>
+	 * If attachments do not have to be saved, this parameter represents the properties file for the request fields.
+	 * If attachments do have t be saved, this parameter represents a directory into which the request and the attachments
+	 * will be saved.
+	 * </p>
+	 *
+	 * @param req an instance of {@link RequestMessageBean} (not null)
+	 * @param withAttachments true to save attachments with the request, false otherwise
+	 * @return the saved request, potentially modified (true if attachments were saved)
+	 * @throws IOException
+	 */
+	public static RequestMessageBean saveRequest( File target, RequestMessageBean req, boolean withAttachments )
+	throws IOException {
+
+		// Modify the input element if attachments must be saved
+		if( withAttachments ) {
+			if( target.exists()) {
+				File[] files = target.listFiles();
+				if( files != null )
+					deleteFilesRecursively( files );
+
+			} else if( ! target.exists() && ! target.mkdir()) {
+				throw new IOException( "Could not create " + target );
+			}
+
+			Set<File> attachments = req.getAttachments();
+			if( attachments != null ) {
+				Set<File> newAttachments = new LinkedHashSet<File> ();
+				for( File f : attachments ) {
+
+					// FIXME: check there are not files with a same name
+					File targetAtt = new File( target, f.getName());
+					newAttachments.add( targetAtt );
+					copyFile( f, targetAtt );
+				}
+
+				req.setAttachments( newAttachments );
+			}
+		}
+
+		// Serialize the element
+		Properties props = RequestMessageBeanUtils.write( req );
+
+		// Write it
+		FileOutputStream fos = null;
+		if( ! withAttachments )
+			fos = new FileOutputStream( target );
+		else
+			fos = new FileOutputStream( new File( target, target.getName() + ".txt" ));
+
+		try {
+			props.store( fos, "Saved from the Petals Client Component" );
+
+		} finally {
+			if( fos != null )
+				fos.close();
+		}
+
+		return req;
 	}
 }

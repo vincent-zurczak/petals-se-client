@@ -119,7 +119,9 @@ public class RequestMessageBeanUtils {
         if( bean.getServiceName() != null )
             properties.setProperty( SERVICE, bean.getServiceName().toString());
 
-        properties.setProperty( MEP, bean.getMep().toString());
+        if( bean.getMep() != null )
+        	properties.setProperty( MEP, bean.getMep().toString());
+
         properties.setProperty( TIMEOUT, String.valueOf( bean.getTimeout()));
         if( bean.getOperation() != null )
             properties.setProperty( OPERATION, bean.getOperation().toString());

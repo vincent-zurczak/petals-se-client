@@ -21,6 +21,7 @@
 package org.ow2.petals.engine.client.swt.tabs;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -53,10 +54,13 @@ import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
@@ -64,16 +68,21 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
 import org.ow2.easywsdl.wsdl.api.Description;
 import org.ow2.easywsdl.wsdl.api.InterfaceType;
 import org.ow2.easywsdl.wsdl.api.Operation;
 import org.ow2.easywsdl.wsdl.api.WSDLReader;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.Utils;
+import org.ow2.petals.engine.client.model.Mep;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
 import org.ow2.petals.engine.client.model.ResponseMessageBean;
 import org.ow2.petals.engine.client.swt.SwtUtils;
@@ -100,11 +109,12 @@ public class RequestTab extends Composite {
 	private StyledText requestStyledText, responseStyledText, reportingStyledText;
 	private TableViewer requestPropertiesViewer, responsePropertiesViewer, requestAttachmentsViewer, responseAttachmentsViewer;
 	private ProgressBar reportingProgressBar;
-	private final Text itfText, srvText, edptText;
-	private final Button showWsdlButton, refreshDataButton, sendButton;
-	private final ComboViewer operationViewer;
-	private final FilesLabelProvider filesLabelProvider;
-	private Image sendImg;
+	private Spinner timeoutSpinner;
+	private Text itfText, srvText, edptText;
+	private Button showWsdlButton, refreshDataButton, sendButton;
+	private ComboViewer operationViewer;
+	private FilesLabelProvider filesLabelProvider;
+	private Image sendImg, viewMenuImg;
 
 	private final PetalsFacade petalsFacade;
 	private Description targetServiceDescription;
@@ -129,6 +139,7 @@ public class RequestTab extends Composite {
 		this.filesLabelProvider = new FilesLabelProvider();
 		this.petalsFacade = petalsFacade;
 		this.sendImg = SwtUtils.loadImage( "/send_64x64.png" );
+		this.viewMenuImg = SwtUtils.loadImage( "/view_menu_16x16.gif" );
 
 
 	    // Create the widgets for the target service
@@ -247,9 +258,9 @@ public class RequestTab extends Composite {
         syncButton.setText( "Send Synchroneously" );
 
         new Label( metaComposite, SWT.NONE ).setText( "Timeout:" );
-        Spinner timeoutSpinner = new Spinner( metaComposite, SWT.BORDER );
+        this.timeoutSpinner = new Spinner( metaComposite, SWT.BORDER );
         int defaultTimeout = PreferencesManager.INSTANCE.getDefaultTimeout();
-        timeoutSpinner.setValues( defaultTimeout, 0, Integer.MAX_VALUE, 0, 1000, 100 );
+        this.timeoutSpinner.setValues( defaultTimeout, 0, Integer.MAX_VALUE, 0, 1000, 100 );
 
         this.sendButton = new Button( sendGroup, SWT.PUSH );
         GridDataFactory.swtDefaults().grab( false, true ).align( SWT.BEGINNING, SWT.FILL ).applyTo( this.sendButton );
@@ -314,6 +325,9 @@ public class RequestTab extends Composite {
 		this.filesLabelProvider.dispose();
 		if( this.sendImg != null && ! this.sendImg.isDisposed())
 			this.sendImg.dispose();
+
+		if( this.viewMenuImg != null && ! this.viewMenuImg.isDisposed())
+			this.viewMenuImg.dispose();
 	}
 
 
@@ -324,7 +338,7 @@ public class RequestTab extends Composite {
 	public void displayRequest( RequestMessageBean req ) {
 
 		// Clear all the fields
-		clearAllFields();
+		clearFields( true, true );
 
 		// Update the UI
 		updateInterfaceName( req.getInterfaceName());
@@ -362,21 +376,30 @@ public class RequestTab extends Composite {
 
 
 	/**
-	 * Clears all the fields.
+	 * Clears UI fields.
+	 * @param request true to clear the reuqest fields
+	 * @param response true to clear the response fields
 	 */
-	private void clearAllFields() {
+	private void clearFields( boolean request, boolean response ) {
 
-		this.requestStyledText.setText( "" );
-		this.requestAttachments.clear();
-		this.requestAttachmentsViewer.refresh();
-		this.requestProperties.clear();
-		this.requestPropertiesViewer.refresh();
+		if( request ) {
+			this.requestStyledText.setText( "" );
+			this.requestAttachments.clear();
+			this.requestAttachmentsViewer.refresh();
+			this.requestProperties.clear();
+			this.requestPropertiesViewer.refresh();
+		}
 
-		this.responseStyledText.setText( "" );
-		this.responseAttachmentsViewer.setInput( Collections.emptySet());
-		this.responseAttachmentsViewer.refresh();
-		this.responsePropertiesViewer.setInput( Collections.emptyMap());
-		this.responsePropertiesViewer.refresh();
+		if( response ) {
+			this.responseStyledText.setText( "" );
+			this.responseAttachmentsViewer.setInput( Collections.emptySet());
+			this.responseAttachmentsViewer.refresh();
+			this.responsePropertiesViewer.setInput( Collections.emptyMap());
+			this.responsePropertiesViewer.refresh();
+		}
+
+		int defaultTimeout = PreferencesManager.INSTANCE.getDefaultTimeout();
+        this.timeoutSpinner.setValues( defaultTimeout, 0, Integer.MAX_VALUE, 0, 1000, 100 );
 	}
 
 
@@ -419,8 +442,8 @@ public class RequestTab extends Composite {
 			@Override
 			public void run() {
 
-				// WSDL to show?
-				RequestTab.this.showWsdlButton.setEnabled( RequestTab.this.targetServiceDescription != null );
+				// Ready to be sent?
+				validate();
 
 				// Update the list of operations to show
 				RequestTab.this.operationViewer.setInput( ops );
@@ -488,10 +511,10 @@ public class RequestTab extends Composite {
 
 		// The XML payload
 		Composite container = new Composite( sashForm, SWT.NONE );
-		GridLayoutFactory.swtDefaults().margins( 0, 0 ).applyTo( container );
+		GridLayoutFactory.swtDefaults().spacing( 5, 0 ).margins( 0, 0 ).applyTo( container );
 		container.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
-		new Label( container, SWT.NONE ).setText( "Request - XML Payload" );
+		createRequestPartHeader( container );
 		this.requestStyledText = SwtUtils.createXmlViewer( container, colorManager );
 
 
@@ -611,6 +634,100 @@ public class RequestTab extends Composite {
 
 
 	/**
+	 * Creates the header part of the request side.
+	 * @param container
+	 */
+	private void createRequestPartHeader( Composite container ) {
+
+		Composite subContainer = new Composite( container, SWT.NONE );
+		GridLayoutFactory.swtDefaults().numColumns( 2 ).margins( 0, 0 ).extendedMargins( 0, 5, 0, 0 ).applyTo( subContainer );
+		subContainer.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
+
+		// The tool bar
+		final ToolBar toolBar = new ToolBar( subContainer, SWT.FLAT );
+		new Label( subContainer, SWT.NONE ).setText( "Request - XML Payload" );
+
+		// The menu
+		final Menu menu = new Menu( getShell(), SWT.POP_UP);
+		MenuItem menuItem = new MenuItem ( menu, SWT.PUSH );
+		menuItem.setText( "New Request" );
+		menuItem.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent( Event e ) {
+				clearFields( true, true );
+				RequestTab.this.operationViewer.getCCombo().notifyListeners( SWT.Selection, new Event());
+			}
+		});
+
+		new MenuItem( menu, SWT.SEPARATOR );
+		menuItem = new MenuItem ( menu, SWT.PUSH );
+		menuItem.setText( "Save As..." );
+		menuItem.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent( Event e ) {
+
+				FileDialog dlg = new FileDialog( getShell(), SWT.SAVE | SWT.SINGLE );
+				dlg.setFilterNames( new String[] { "Text File (*.txt)" });
+				dlg.setFilterExtensions( new String[] { "*.txt" });
+
+				String target = dlg.open();
+				if( target != null ) {
+					if( ! target.toLowerCase().endsWith( ".txt" ))
+						target += ".txt";
+
+					RequestMessageBean req = createRequestInstance();
+					try {
+						req = Utils.saveRequest( new File( target ), req, false );
+						displayRequest( req );
+
+					} catch( IOException e1 ) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
+
+		menuItem = new MenuItem ( menu, SWT.PUSH );
+		menuItem.setText( "Save With Attachments..." );
+		menuItem.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent( Event e ) {
+
+				DirectoryDialog dlg = new DirectoryDialog( getShell());
+				String target = dlg.open();
+				if( target != null ) {
+					RequestMessageBean req = createRequestInstance();
+					try {
+						req = Utils.saveRequest( new File( target ), req, true );
+						displayRequest( req );
+
+					} catch( IOException e1 ) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+			}
+		});
+
+		// Link them together
+		final ToolItem item = new ToolItem( toolBar, SWT.FLAT );
+		item.setImage( this.viewMenuImg );
+		item.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+
+					Rectangle rect = item.getBounds ();
+					Point pt = new Point (rect.x, rect.y + rect.height);
+					pt = toolBar.toDisplay (pt);
+					menu.setLocation (pt.x, pt.y);
+					menu.setVisible (true);
+			}
+		});
+	}
+
+
+	/**
 	 * Creates a message part.
 	 * @param parent
 	 * @param colorManager
@@ -623,10 +740,10 @@ public class RequestTab extends Composite {
 
 		// The XML payload
 		Composite container = new Composite( sashForm, SWT.NONE );
-		GridLayoutFactory.swtDefaults().margins( 0, 0 ).applyTo( container );
+		GridLayoutFactory.swtDefaults().spacing( 5, 0 ).margins( 0, 0 ).applyTo( container );
 		container.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
-		new Label( container, SWT.NONE ).setText( "Response - XML Payload" );
+		createResponsePartHeader( container );
 		this.responseStyledText = SwtUtils.createXmlViewer( container, colorManager );
 
 
@@ -654,6 +771,75 @@ public class RequestTab extends Composite {
 
 		// Define the sash weights
 		sashForm.setWeights( new int[] { 70, 15, 15 });
+	}
+
+
+	/**
+	 * Creates the header part of the response side.
+	 * @param container
+	 */
+	private void createResponsePartHeader( Composite container ) {
+
+		Composite subContainer = new Composite( container, SWT.NONE );
+		GridLayoutFactory.swtDefaults().numColumns( 2 ).margins( 0, 0 ).extendedMargins( 0, 5, 0, 0 ).applyTo( subContainer );
+		subContainer.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
+
+		// The tool bar
+		final ToolBar toolBar = new ToolBar( subContainer, SWT.FLAT );
+		new Label( subContainer, SWT.NONE ).setText( "Response - XML Payload" );
+
+		// The menu
+		final Menu menu = new Menu( getShell(), SWT.POP_UP);
+		MenuItem menuItem = new MenuItem ( menu, SWT.PUSH );
+		menuItem.setText( "Use as Request" );
+		menuItem.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent( Event e ) {
+
+				// Pay-load
+				RequestTab.this.requestStyledText.setText( RequestTab.this.responseStyledText.getText());
+				RequestTab.this.responseStyledText.setText( "" );
+
+				// Properties
+				RequestTab.this.requestProperties.clear();
+				Map<?,?> map = (Map<?,?>) RequestTab.this.responsePropertiesViewer.getInput();
+				if( map != null ) {
+					for( Map.Entry<?,?> entry : map.entrySet())
+						RequestTab.this.requestProperties.put((String) entry.getKey(), (String) entry.getValue());
+				}
+
+				RequestTab.this.responsePropertiesViewer.setInput( Collections.emptyMap());
+				RequestTab.this.responsePropertiesViewer.refresh();
+				RequestTab.this.requestPropertiesViewer.refresh();
+
+				// Attachments
+				RequestTab.this.requestAttachments.clear();
+				Set<?> set = (Set<?>) RequestTab.this.responseAttachmentsViewer.getInput();
+				if( set != null ) {
+					for( Object o : set )
+						RequestTab.this.requestAttachments.add((File) o);
+				}
+
+				RequestTab.this.responseAttachmentsViewer.setInput( Collections.emptySet());
+				RequestTab.this.responseAttachmentsViewer.refresh();
+				RequestTab.this.requestAttachmentsViewer.refresh();
+			}
+		});
+
+		// Link them together
+		final ToolItem item = new ToolItem( toolBar, SWT.FLAT );
+		item.setImage( this.viewMenuImg );
+		item.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent(Event e) {
+
+				Rectangle rect = item.getBounds ();
+				Point pt = new Point (rect.x, rect.y + rect.height);
+				pt = toolBar.toDisplay (pt);
+				menu.setLocation (pt.x, pt.y);
+				menu.setVisible (true);
+			}
+		});
 	}
 
 
@@ -706,14 +892,13 @@ public class RequestTab extends Composite {
 
 	/**
 	 * Validates the user entries.
-	 * @return an error message or null if everything is correct
 	 */
-	private String validate() {
+	private void validate() {
 
 		String msg = null;
 
 
-		return msg;
+		RequestTab.this.showWsdlButton.setEnabled( msg == null );
 	}
 
 
@@ -746,5 +931,31 @@ public class RequestTab extends Composite {
 	private void updateEndpointName( String edptName ) {
 		this.edptText.setData( edptName );
 		this.edptText.setText( edptName == null ? "" : edptName );
+	}
+
+
+	/**
+	 * @return a non-null instance of {@link RequestMessageBean}
+	 */
+	private RequestMessageBean createRequestInstance() {
+
+		RequestMessageBean result = new RequestMessageBean();
+		result.setInterfaceName((QName) this.itfText.getData());
+		result.setServiceName((QName) this.srvText.getData());
+		result.setEndpointName( this.edptText.getText());
+
+		result.setAttachments( this.requestAttachments );
+		result.setProperties( this.requestProperties );
+		result.setXmlPayload( this.requestStyledText.getText());
+
+		result.setTimeout( this.timeoutSpinner.getSelection());
+		Operation op = (Operation) ((IStructuredSelection) this.operationViewer.getSelection()).getFirstElement();
+		if( op != null ) {
+			result.setOperation( op.getQName());
+			// FIXME
+			result.setMep( Mep.IN_ONLY );
+		}
+
+		return result;
 	}
 }

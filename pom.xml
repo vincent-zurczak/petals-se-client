@@ -5,13 +5,24 @@
 		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	
 	<modelVersion>4.0.0</modelVersion>
-	<!-- FIXME: add a parent? -->
+	<!-- 
+	<parent>
+		<artifactId>petals-components-parent</artifactId>
+		<groupId>org.ow2.petals</groupId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+	-->
 	
 	<name>petals-se-client</name>
 	<artifactId>petals-se-client</artifactId>
 	<groupId>org.ow2.petals</groupId>
-	<packaging>jar</packaging>
+	<packaging>jbi-component</packaging>
 	<version>1.0.0-SNAPSHOT</version>
+	<description>A Petals component that provides a GUI to invoke Petals services.</description>
+	
+	<properties>
+    	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  	</properties>
     
 	<dependencies>
 		<dependency>
@@ -42,10 +53,9 @@
 		</dependency>
 	
 		<!-- This library is only used to factorize SWT code -->
-		<!-- The runtime libraries that depend on the platform will be specified by specialized component projects -->
 		<dependency>
 			<groupId>org.eclipse.swt</groupId>
-			<artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
+			<artifactId>org.eclipse.swt.${classifier}</artifactId>
 			<version>3.7.2</version>
 		</dependency>
     
@@ -59,6 +69,8 @@
 	
 	<build>
 		<plugins>
+		
+			<!-- Set additional source folders -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
@@ -93,7 +105,29 @@
 					</execution>
 				</executions>
 			</plugin>
-		</plugins>
+			
+			<!-- Use the Petals Maven plug-in  -->
+			<plugin>
+	        	<groupId>org.ow2.petals</groupId>
+	        	<artifactId>maven-petals-plugin</artifactId>
+	        	<version>2.3.0</version>
+	        	<extensions>true</extensions>
+	        	<configuration>
+	          		<jbiDirectory>src/main/resources/jbi</jbiDirectory>
+	          		<jbiName>${project.artifactId}-${project.version}-${classifier}</jbiName>
+	        	</configuration>
+	      	</plugin>
+		
+		
+			<!-- Generate several component versions from a single project -->
+        	<plugin>
+        		<artifactId>maven-jar-plugin</artifactId>
+        		<version>2.4</version>
+        		<configuration>
+          			<classifier>${classifier}</classifier>
+        		</configuration>
+      		</plugin>
+  		</plugins>
 	</build>
 	
 	<repositories>
@@ -101,8 +135,15 @@
 			<id>swt-repo</id>
 			<url>https://swt-repo.googlecode.com/svn/repo/</url>
 		</repository>
-	</repositories>
-  
+	</repositories> 
+	
+	<pluginRepositories>
+		<pluginRepository>
+			<id>petals-link-stable</id>
+			<url>http://maven.petalslink.org/public/</url>
+		</pluginRepository>
+	</pluginRepositories>
+	
 	<scm>
 		<connection>scm:svn:https://svn.petalslink.org/svnroot/trunk/product/dev/prod/petals/components-sls/petals-se-client</connection>
 		<developerConnection>scm:svn:https://svn.petalslink.org/svnroot/trunk/product/dev/prod/petals/components-sls/petals-se-client</developerConnection>

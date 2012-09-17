@@ -25,7 +25,7 @@ import javax.xml.namespace.QName;
 /**
  * @author Christophe Hamerling - Linagora
  */
-public class RequestMessageBean extends BasicMessageBean {
+public class RequestMessageBean extends BasicMessageBean implements Cloneable {
 
     private QName interfaceName;
     private QName serviceName;
@@ -118,5 +118,24 @@ public class RequestMessageBean extends BasicMessageBean {
      */
     public void setOperation(QName operation) {
         this.operation = operation;
+    }
+
+    /*
+     * (non-Javadoc)
+     * @see java.lang.Object
+     * #clone()
+     */
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+
+    	RequestMessageBean clone = new RequestMessageBean();
+    	clone.endpointName = this.endpointName;
+    	clone.interfaceName = this.interfaceName;
+    	clone.mep = this.mep;
+    	clone.operation = this.operation;
+    	clone.serviceName = this.serviceName;
+    	clone.timeout = this.timeout;
+
+    	return clone;
     }
 }
