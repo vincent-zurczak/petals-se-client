@@ -128,14 +128,21 @@ public class SwtUtils {
 	 * Creates a XML viewer.
 	 * @param parent the parent
 	 * @param colorManager a color manager
+	 * @param forceScrolling true to force scrolling, false to rely on preferences
 	 * @return a configured instance of styled text
 	 */
-	public static StyledText createXmlViewer( Composite parent, final ColorCacheManager colorManager ) {
+	public static StyledText createXmlViewer(
+			Composite parent,
+			final ColorCacheManager colorManager,
+			boolean forceScrolling ) {
 
 		// Each widget has its own analyzer
 		final XmlRegionAnalyzer xmlRegionAnalyzer = new XmlRegionAnalyzer();
 		int style = SWT.BORDER | SWT.MULTI;
-		style |= PreferencesManager.INSTANCE.wrapInsteadOfScrolling() ?  SWT.WRAP : SWT.V_SCROLL | SWT.H_SCROLL;
+		if( forceScrolling )
+			style |= SWT.V_SCROLL | SWT.H_SCROLL;
+		else
+			style |= PreferencesManager.INSTANCE.wrapInsteadOfScrolling() ?  SWT.WRAP : SWT.V_SCROLL | SWT.H_SCROLL;
 
 		// Create the text
 		StyledText st = new StyledText( parent, style );

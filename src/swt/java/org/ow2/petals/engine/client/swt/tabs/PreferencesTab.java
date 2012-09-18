@@ -196,7 +196,7 @@ public class PreferencesTab extends Composite {
 		regionToLabel.put( XmlRegionType.INSTRUCTION, "XML Instructions" );
 
 		// Show a preview area
-		final StyledText previewStyledText = SwtUtils.createXmlViewer( shGroup, colorManager );
+		final StyledText previewStyledText = SwtUtils.createXmlViewer( shGroup, colorManager, false );
 		String previewText = Utils.loadResource( "/sample.xml" );
 		previewStyledText.setText( previewText );
 

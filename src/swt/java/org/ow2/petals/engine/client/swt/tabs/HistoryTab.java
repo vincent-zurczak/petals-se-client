@@ -146,7 +146,7 @@ public class HistoryTab extends Composite {
 
 		new Label( container, SWT.NONE ).setText( "Quick Overview of the XML Payload" );
 		new Label( container, SWT.NONE ).setText( "The Request Properties" );
-		final StyledText xmlPayloadStyledText = SwtUtils.createXmlViewer( container, colorManager );
+		final StyledText xmlPayloadStyledText = SwtUtils.createXmlViewer( container, colorManager, true );
 
 
 		subContainer = new Composite( container, SWT.NONE );

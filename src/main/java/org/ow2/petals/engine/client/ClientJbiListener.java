@@ -74,7 +74,6 @@ public class ClientJbiListener implements Runnable {
 
             } catch( MessagingException e ) {
 
-
                 // TODO: get something better here
                 Throwable cause = e;
                 while( cause != null ) {

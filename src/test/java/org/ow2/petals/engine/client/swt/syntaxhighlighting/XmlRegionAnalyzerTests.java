@@ -1,20 +1,30 @@
 /****************************************************************************
  *
- * Copyright (c) 2012, Linagora
+ * Copyright (c) 2012, Vincent Zurczak - All rights reserved.
+ * This source file is released under the terms of the BSD license.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the University of California, Berkeley nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
  *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  *****************************************************************************/
 
@@ -22,6 +32,9 @@ package org.ow2.petals.engine.client.swt.syntaxhighlighting;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -30,7 +43,8 @@ import org.junit.Test;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion.XmlRegionType;
 
 /**
- * @author Vincent Zurczak - Linagora
+ * Unit tests for {@link XmlRegionAnalyzer}.
+ * @author Vincent Zurczak
  */
 public class XmlRegionAnalyzerTests {
 
@@ -624,10 +638,30 @@ public class XmlRegionAnalyzerTests {
 
 
 	/**
+	 * This method tests a XML document that was not successfully processed by this class.
+	 * <p>
+	 * This is more like a performance test.
+	 * The implementation was reviewed in consequence because of this test.
+	 * </p>
+	 * @throws Exception
+	 */
+	@Test
+	public void testExampleThatFailed_1() throws Exception {
+
+		String test = loadResource( "/bigWSDL/StackOverflowExample.xml" );
+		Assert.assertNotNull( test );
+
+		XmlRegionAnalyzer analyzer = new XmlRegionAnalyzer();
+		List<XmlRegion> regions = analyzer.analyzeXml( test );
+		testRegionsContiguity( regions, test );
+	}
+
+
+	/**
 	 * Verifies that all the XML regions in the list are contiguous.
 	 * @param regions the analyzed regions
 	 */
-	private void testRegionsContiguity( List<XmlRegion> regions, String xml ) {
+	private static void testRegionsContiguity( List<XmlRegion> regions, String xml ) {
 
 		int end = 0;
 		for( XmlRegion xr : regions ) {
@@ -636,5 +670,47 @@ public class XmlRegionAnalyzerTests {
 		}
 
 		Assert.assertEquals( end, xml.length());
+	}
+
+
+	/**
+	 * Loads a resource from the class loader and returns its content as a string.
+	 * @param resourceLocation the resource location
+	 * @return a string, never null
+	 * @throws IOException
+	 */
+	private static String loadResource( String resourceLocation ) {
+
+		String result = null;
+		InputStream in = null;
+		try {
+			in = XmlRegionAnalyzer.class.getResourceAsStream( resourceLocation );
+			if( in != null ) {
+				ByteArrayOutputStream os = new ByteArrayOutputStream();
+				byte[] buf = new byte[ 1024 ];
+				int len;
+				while((len = in.read( buf )) > 0) {
+					os.write( buf, 0, len );
+				}
+
+				result = os.toString( "UTF-8" );
+			}
+
+		} catch( Exception e ) {
+			// TODO
+
+		} finally {
+
+			if( in != null ) {
+				try {
+					in.close();
+
+				} catch( IOException e ) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		return result != null ? result : "";
 	}
 }

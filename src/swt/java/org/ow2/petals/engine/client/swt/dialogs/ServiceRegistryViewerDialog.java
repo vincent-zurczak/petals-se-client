@@ -30,6 +30,7 @@ import javax.xml.namespace.QName;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.TitleAreaDialog;
+import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.viewers.ColumnViewerToolTipSupport;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -38,7 +39,6 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.window.ToolTip;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -58,9 +58,7 @@ public class ServiceRegistryViewerDialog extends TitleAreaDialog {
 
 	private ServiceRegistryLabelProvider labelProvider;
 	private final List<ServiceEndpoint> serviceEndpoints;
-	private String filterItfName, filterItfNs, filterSrvName, filterSrvNs, filterEdptName;
 
-	private ServiceEndpoint serviceEndpoint;
 	private QName itfToInvoke, srvToInvoke;
 	private String edptToInvoke;
 
@@ -108,24 +106,8 @@ public class ServiceRegistryViewerDialog extends TitleAreaDialog {
 
 		Composite outterComposite = new Composite( parent, SWT.BORDER );
 		outterComposite.setBackground( Display.getDefault().getSystemColor( SWT.COLOR_WHITE ));
-
-		GridLayout layout = new GridLayout();
-		layout.marginWidth = 0;
-		layout.marginHeight = 0;
-		outterComposite.setLayout( layout );
+		GridLayoutFactory.swtDefaults().margins( 0, 0 ).applyTo( outterComposite );
 		outterComposite.setLayoutData( new GridData( GridData.FILL_BOTH ));
-
-
-
-
-		// Create the search filter
-//		Section filterSection = this.toolkit.createSection( container,
-//					ExpandableComposite.TITLE_BAR | ExpandableComposite.TWISTIE | Section.DESCRIPTION );
-//		filterSection.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
-//		filterSection.clientVerticalSpacing = 10;
-//		filterSection.setText( "Search Filters" );
-//		filterSection.setDescription( "Filter the displayed services." );
-//
 
 		Tree tree = new Tree( outterComposite, SWT.HIDE_SELECTION | SWT.FULL_SELECTION | SWT.SINGLE );
 		GridData layoutData = new GridData( GridData.FILL_BOTH );
@@ -138,7 +120,6 @@ public class ServiceRegistryViewerDialog extends TitleAreaDialog {
 
 		this.labelProvider = new ServiceRegistryLabelProvider();
 		treeViewer.setLabelProvider( this.labelProvider );
-		// treeViewer.addFilter( new ServiceViewerFilter());
 		ColumnViewerToolTipSupport.enableFor( treeViewer, ToolTip.NO_RECREATE );
 
 
@@ -273,13 +254,5 @@ public class ServiceRegistryViewerDialog extends TitleAreaDialog {
 	 */
 	public String getEdptToInvoke() {
 		return this.edptToInvoke;
-	}
-
-
-	/**
-	 * @return the serviceEndpoint
-	 */
-	public ServiceEndpoint getServiceEndpoint() {
-		return this.serviceEndpoint;
 	}
 }

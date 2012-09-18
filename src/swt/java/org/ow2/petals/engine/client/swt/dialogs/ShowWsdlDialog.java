@@ -20,18 +20,29 @@
 
 package org.ow2.petals.engine.client.swt.dialogs;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.ProgressMonitorDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.ow2.petals.engine.client.swt.SwtUtils;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
+import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion;
+import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegionAnalyzer;
 
 /**
  * A dialog to show the content of a WSDL description.
@@ -39,20 +50,22 @@ import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
  */
 public class ShowWsdlDialog extends Dialog {
 
-	private final String wsdlContent;
-	private final ColorCacheManager colorManager;
+	private final String wsdlDescription;
+	private final StyleRange[] styleRanges;
 
 
 	/**
 	 * Constructor.
 	 * @param parentShell
-	 * @param wsdlContent
-	 * @param colorManager
+	 * @param wsdlDescription
+	 * @param styleRanges
 	 */
-	public ShowWsdlDialog( Shell parentShell, String wsdlContent, ColorCacheManager colorManager ) {
+	public ShowWsdlDialog( Shell parentShell, String wsdlDescription, StyleRange[] styleRanges ) {
 		super( parentShell );
-		this.wsdlContent = wsdlContent;
-		this.colorManager = colorManager;
+		setShellStyle( SWT.SHELL_TRIM );
+
+		this.wsdlDescription = wsdlDescription;
+		this.styleRanges = styleRanges;
 	}
 
 
@@ -68,11 +81,14 @@ public class ShowWsdlDialog extends Dialog {
 
 		Composite container = new Composite( parent, SWT.NONE );
 		container.setBackground( getShell().getDisplay().getSystemColor( SWT.COLOR_WHITE ));
-		container.setLayout( new GridLayout( 2, false ));
+		container.setLayout( new GridLayout());
 		container.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
-		StyledText styledText = SwtUtils.createXmlViewer( container, this.colorManager );
-		styledText.setText( this.wsdlContent );
+		int style = SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL | SWT.READ_ONLY;
+		StyledText st = new StyledText( parent, style );
+		st.setLayoutData( new GridData( GridData.FILL_BOTH ));
+		st.setText( this.wsdlDescription );
+		st.setStyleRanges( this.styleRanges );
 
 		return container;
 	}
@@ -86,15 +102,13 @@ public class ShowWsdlDialog extends Dialog {
 	@Override
 	protected Control createButtonBar( Composite parent ) {
 
-		Control control = super.createButtonBar(parent);
+		Control control = super.createButtonBar( parent );
 		control.setBackground( getShell().getDisplay().getSystemColor( SWT.COLOR_WHITE ));
 		parent.setBackground( getShell().getDisplay().getSystemColor( SWT.COLOR_WHITE ));
 
 		Button b = getButton( Dialog.OK );
-		if( b != null ) {
+		if( b != null )
 			b.setFocus();
-			b.setEnabled( false );
-		}
 
 		return control;
 	}
@@ -107,6 +121,61 @@ public class ShowWsdlDialog extends Dialog {
 	 */
 	@Override
 	protected Point getInitialSize() {
-		return new Point( 500, 300 );
+		Rectangle rect = Display.getDefault().getBounds();
+		return new Point( rect.width / 2, rect.height / 2 );
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.jface.dialogs.Dialog
+	 * #createButton(org.eclipse.swt.widgets.Composite, int, java.lang.String, boolean)
+	 */
+	@Override
+	protected Button createButton( Composite parent, int id, String label, boolean defaultButton ) {
+		return id == Dialog.CANCEL ? null : super.createButton( parent, id, label, defaultButton );
+
+	}
+
+
+	/**
+	 * A convenience method to display both a progress dialog and then the WSDL dialog.
+	 * @param shell
+	 * @param xmlText
+	 * @param colorManager
+	 */
+	public static void openShowWsdlDialog( Shell shell, final String xmlText, final ColorCacheManager colorManager ) {
+
+		final Object[] array = new Object[ 1 ];
+		IRunnableWithProgress runnable = new IRunnableWithProgress() {
+			@Override
+			public void run( IProgressMonitor monitor )
+			throws InvocationTargetException, InterruptedException {
+
+				try {
+					monitor.beginTask( "Formatting the WSDL...", IProgressMonitor.UNKNOWN );
+					List<XmlRegion> regions = new XmlRegionAnalyzer().analyzeXml( xmlText );
+					StyleRange[] styleRanges = SwtUtils.computeStyleRanges( regions, colorManager );
+					array[ 0 ] = styleRanges;
+
+				} finally {
+					monitor.done();
+				}
+			}
+		};
+
+		try {
+			new ProgressMonitorDialog( shell ).run( true, false, runnable );
+			StyleRange[] styleRanges = (StyleRange[]) array[ 0 ];
+			new ShowWsdlDialog( shell, xmlText, styleRanges ).open();
+
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

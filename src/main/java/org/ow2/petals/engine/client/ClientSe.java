@@ -34,6 +34,7 @@ import javax.jbi.servicedesc.ServiceEndpoint;
 import javax.management.ObjectName;
 
 import org.ow2.petals.engine.client.misc.RealPetalsFacade;
+import org.ow2.petals.engine.client.swt.SwtClient;
 import org.ow2.petals.engine.client.ui.IClientUI;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
@@ -72,7 +73,11 @@ public class ClientSe implements Component, ComponentLifeCycle {
 		this.channel = this.context.getDeliveryChannel();
 		this.listener = new ClientJbiListener( this );
 
-		this.uiClient = null; // TODO
+		// We here directly instantiate a UI client.
+		// But this component was designed to have several UI clients.
+		// We could imagine a Swing or Web Client.
+		// In that case, we could use Java Service Providers to select one.
+		this.uiClient = new SwtClient();
 		this.uiClient.setPetalsFacade( new RealPetalsFacade( this ));
 
 		this.logger.log(Level.INFO, "init");

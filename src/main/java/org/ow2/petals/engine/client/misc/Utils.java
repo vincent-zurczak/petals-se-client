@@ -29,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.util.GregorianCalendar;
 import java.util.LinkedHashSet;
@@ -36,8 +37,12 @@ import java.util.Properties;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.ow2.easywsdl.schema.api.Element;
@@ -97,6 +102,33 @@ public class Utils {
         source.setInputStream( new ByteArrayInputStream( msg.getBytes( "UTF-8" )));
         return source;
     }
+
+
+    /**
+	 * Writes a document as a string.
+	 * @param doc the document
+	 * @param omitXmlDeclaration true to omit the XML declaration
+	 * @return the written document, or null if the conversion failed
+	 * @throws Exception
+	 */
+	public static String writeDocument( Document doc, boolean omitXmlDeclaration ) throws Exception {
+
+		String result = null;
+		DOMSource domSource = new DOMSource( doc );
+		StringWriter writer = new StringWriter();
+		StreamResult streamResult = new StreamResult( writer );
+
+		TransformerFactory transformerFactory = TransformerFactory.newInstance();
+		Transformer transformer = transformerFactory.newTransformer();
+		transformer.setOutputProperty( OutputKeys.INDENT, "yes" );
+		transformer.setOutputProperty( OutputKeys.STANDALONE, "yes" );
+		if( omitXmlDeclaration )
+			transformer.setOutputProperty( OutputKeys.OMIT_XML_DECLARATION, "yes" );
+
+		transformer.transform( domSource, streamResult );
+		result = writer.toString();
+		return result;
+	}
 
 
     /**
