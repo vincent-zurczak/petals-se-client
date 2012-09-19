@@ -55,9 +55,9 @@ import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.ow2.petals.engine.client.model.BasicMessageBean;
+import org.ow2.petals.engine.client.swt.ClientApplication;
 import org.ow2.petals.engine.client.swt.SwtUtils;
 import org.ow2.petals.engine.client.swt.dialogs.KeyValueDialog;
-import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.viewers.FilesLabelProvider;
 import org.ow2.petals.engine.client.swt.viewers.MessagePropertiesContentProvider;
 import org.ow2.petals.engine.client.swt.viewers.MessagePropertiesLabelProvider;
@@ -70,7 +70,7 @@ public class MessageComposite extends SashForm {
 
 	private final FilesLabelProvider filesLabelProvider;
 	private final Image viewMenuImg;
-	private final ColorCacheManager colorManager;
+	private final ClientApplication clientApp;
 
 	private Menu menu;
 	private TableViewer propertiesViewer, attachmentsViewer;
@@ -85,16 +85,16 @@ public class MessageComposite extends SashForm {
 	 * Constructor.
 	 * @param title
 	 * @param parent
-	 * @param colorManager
+	 * @param clientApp
 	 */
-	public MessageComposite( String title, Composite parent, ColorCacheManager colorManager ) {
+	public MessageComposite( String title, Composite parent, ClientApplication clientApp ) {
 		super( parent, SWT.VERTICAL );
 		setLayoutData( new GridData( GridData.FILL_BOTH ));
 		setSashWidth( 10 );
 
 		this.viewMenuImg = SwtUtils.loadImage( "/view_menu_16x16.gif" );
 		this.filesLabelProvider = new FilesLabelProvider();
-		this.colorManager = colorManager;
+		this.clientApp = clientApp;
 		this.title = title;
 
 		createPayloadSection();
@@ -126,6 +126,14 @@ public class MessageComposite extends SashForm {
 	@Override
 	public Menu getMenu() {
 		return this.menu;
+	}
+
+
+	/**
+	 * @return the styledText
+	 */
+	public StyledText getStyledText() {
+		return this.styledText;
 	}
 
 
@@ -204,7 +212,7 @@ public class MessageComposite extends SashForm {
 		new Label( subContainer, SWT.NONE ).setText( this.title + " - XML Payload" );
 
 		// XML Viewer
-		this.styledText = SwtUtils.createXmlViewer( container, this.colorManager, false );
+		this.styledText = SwtUtils.createXmlViewer( container, this.clientApp.getColorManager(), false );
 
 		// Link the menu and the tool-bar
 		this.menu = new Menu( getShell(), SWT.POP_UP);
@@ -264,7 +272,6 @@ public class MessageComposite extends SashForm {
 				if( dlg.open() == Window.OK ) {
 					MessageComposite.this.properties.put( dlg.getKey(), dlg.getValue());
 					MessageComposite.this.propertiesViewer.refresh();
-					// TODO: validate();
 				}
 			}
 		});
@@ -285,7 +292,6 @@ public class MessageComposite extends SashForm {
 				}
 
 				MessageComposite.this.propertiesViewer.refresh();
-				// TODO: validate();
 			}
 		});
 
@@ -359,7 +365,7 @@ public class MessageComposite extends SashForm {
 						MessageComposite.this.attachments.add( new File( dlg.getFilterPath(), s ));
 
 					MessageComposite.this.attachmentsViewer.refresh();
-					// TODO: validate();
+					MessageComposite.this.clientApp.validateRequest();
 				}
 			}
 		});
@@ -378,7 +384,7 @@ public class MessageComposite extends SashForm {
 					MessageComposite.this.attachments.remove( it.next());
 
 				MessageComposite.this.attachmentsViewer.refresh();
-				// TODO: validate();
+				MessageComposite.this.clientApp.validateRequest();
 			}
 		});
 

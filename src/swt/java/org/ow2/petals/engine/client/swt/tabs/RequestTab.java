@@ -24,17 +24,21 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javax.jbi.servicedesc.ServiceEndpoint;
 import javax.xml.namespace.QName;
 
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
@@ -42,6 +46,11 @@ import org.eclipse.swt.custom.CCombo;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -55,6 +64,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Spinner;
@@ -67,6 +77,7 @@ import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.model.Mep;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
+import org.ow2.petals.engine.client.swt.ClientApplication;
 import org.ow2.petals.engine.client.swt.SwtUtils;
 import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog;
 import org.ow2.petals.engine.client.swt.dialogs.ShowWsdlDialog;
@@ -83,18 +94,20 @@ public class RequestTab extends Composite {
 	private static final String DEFAULT_SKELETON = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
 	private static final String COMMENT_NO_WSDL = "<!-- No skeleton could be generated (no WSDL) -->";
 	private static final String COMMENT_INVALID_WSDL = "<!-- No skeleton could be generated (invalid WSDL) -->";
+	private static final String CDATA_SECTION = "<![CDATA[<!-- Insert your mark-ups here -->]]>";
 
-	private final Image sendImg;
+	private final Image sendImg, errorImg, warningImg, infoImg;
+	private final ClientApplication clientApp;
+
 	private MessageComposite requestComposite, responseComposite;
 	private StyledText reportingStyledText;
+	private Label reportingImageLabel;
 	private ProgressBar reportingProgressBar;
 	private Spinner timeoutSpinner;
 	private Text itfText, srvText, edptText;
-	private Button showWsdlButton, refreshDataButton;
-	private Button sendButton;
+	private Button showWsdlButton, refreshDataButton, sendButton;
 	private ComboViewer operationViewer;
 
-	private final PetalsFacade petalsFacade;
 	private Description wsdlDescription;
 	private String wsdlDescriptionAsString;
 	private QName operationName;
@@ -105,22 +118,65 @@ public class RequestTab extends Composite {
 	/**
 	 * Creates the request tab.
 	 * @param parent
-	 * @param petalsFacade
-	 * @param colorManager
+	 * @param clientApp
 	 */
-	public RequestTab( Composite parent, PetalsFacade petalsFacade, ColorCacheManager colorManager ) {
+	public RequestTab( Composite parent, ClientApplication clientApp ) {
 
 		super( parent, SWT.NONE );
 		setLayout( new GridLayout());
 	    setLayoutData( new GridData( GridData.FILL_BOTH ));
 
-		this.petalsFacade = petalsFacade;
+	    this.clientApp = clientApp;
 		this.sendImg = SwtUtils.loadImage( "/send_64x64.png" );
+		this.errorImg = SwtUtils.loadImage( "/error_16x16.gif" );
+		this.warningImg = SwtUtils.loadImage( "/warning_16x16.gif" );
+		this.infoImg = SwtUtils.loadImage( "/info_16x16.gif" );
 
-		createTargetServiceSection( colorManager );
-		createMessageSection( colorManager );
+		createTargetServiceSection( clientApp.getColorManager());
+		createMessageSection( clientApp.getColorManager());
 		createToolSection();
     }
+
+
+	/**
+	 * Validates the user entries.
+	 */
+	public void validate() {
+
+		String msg = null;
+		if( this.itfText.getData() == null )
+			msg = "No target service was specified.";
+		else if( this.operationName == null )
+			msg = "You must specify the name of the operation to invoke.";
+		else if( this.mep == null )
+			msg = "You must specify the MEP (Message Invocation Pattern).";
+		else if( Utils.isEmptyString( this.requestComposite.getPayload()))
+			msg = "You must define a XML payload in the request message.";
+		else {
+			Set<File> attachments = this.requestComposite.getAttachments();
+			if( attachments != null ) {
+				for( File f : attachments ) {
+					if( ! f.exists()) {
+						msg = "The attached file '" + f.getName() + "' does not exist.";
+						break;
+					}
+				}
+			}
+		}
+
+		updateMessage( msg, IStatus.ERROR );
+		RequestTab.this.sendButton.setEnabled( msg == null );
+	}
+
+
+	/**
+	 * Clears the tab.
+	 */
+	public void clearTab( ) {
+		this.requestComposite.setInput( null );
+		this.responseComposite.setInput( null );
+		updateMessage( null, IStatus.OK );
+	}
 
 
 	/**
@@ -172,6 +228,34 @@ public class RequestTab extends Composite {
 	    	}
 	    });
 
+	    this.operationViewer.addSelectionChangedListener( new ISelectionChangedListener() {
+			@Override
+			public void selectionChanged( SelectionChangedEvent e ) {
+
+				// Generate a new request? Yes, if empty.
+				if( Utils.isEmptyString( RequestTab.this.requestComposite.getPayload()))
+					RequestTab.this.requestComposite.setPayload( generateSkeleton());
+				else
+					updateMessage( "The request may not match the selected service operation.", IStatus.WARNING );
+
+				// Get data
+				ISelection selection = RequestTab.this.operationViewer.getSelection();
+				if( selection.isEmpty()) {
+					RequestTab.this.operationName = null;
+					RequestTab.this.mep = null;
+				} else {
+					Operation op = (Operation) ((IStructuredSelection) selection).getFirstElement();
+					RequestTab.this.operationName = op.getQName();
+					if( op.getInput() != null && op.getInput().getElement() != null )
+						RequestTab.this.mep = Mep.IN_ONLY;
+					else
+						RequestTab.this.mep = Mep.IN_OUT;
+				}
+
+				validate();
+			}
+		});
+
 	    Button customOperationButton = new Button( lineContainer, SWT.PUSH );
 	    customOperationButton.setText( "Define a Custom Operation..." );
 
@@ -209,8 +293,8 @@ public class RequestTab extends Composite {
 	    GridDataFactory.swtDefaults().align( SWT.FILL, SWT.FILL ).grab( true, true ).indent( 0, 10 ).applyTo( sashForm );
         sashForm.setSashWidth( 20 );
 
-        this.requestComposite = new MessageComposite( "Request", sashForm, colorManager );
-        this.responseComposite = new MessageComposite( "Response", sashForm, colorManager );
+        this.requestComposite = new MessageComposite( "Request", sashForm, this.clientApp );
+        this.responseComposite = new MessageComposite( "Response", sashForm, this.clientApp );
         sashForm.setWeights( new int[] { 50, 50 });
 
         // Add menus items for the request part
@@ -296,6 +380,50 @@ public class RequestTab extends Composite {
 				RequestTab.this.responseComposite.setInput( null );
 			}
 		});
+
+		// Add a context menu on the request's styled text
+		final Menu contextMenu = new Menu( this.requestComposite.getStyledText());
+		menuItem = new MenuItem ( contextMenu, SWT.PUSH );
+		menuItem.setText( "Insert a CDATA section" );
+		menuItem.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent( Event e ) {
+
+				int caret = RequestTab.this.requestComposite.getStyledText().getCaretOffset();
+				RequestTab.this.requestComposite.getStyledText().insert( CDATA_SECTION );
+
+				int start = caret + 9;
+				int end = caret + CDATA_SECTION.length() - 3;
+				RequestTab.this.requestComposite.getStyledText().setSelection( start, end );
+			}
+		});
+
+		this.requestComposite.getStyledText().addMouseListener( new MouseAdapter() {
+			@Override
+			public void mouseDown( MouseEvent e ) {
+
+				if( e.button != 3 )
+					return;
+
+				int caret = RequestTab.this.requestComposite.getStyledText().getCaretOffset() - 1;
+				String txt = RequestTab.this.requestComposite.getPayload();
+				char c = '!';
+				while( caret > 0
+						&& Character.isWhitespace((c = txt.charAt( caret ))))
+					caret --;
+
+				if( c == '>' )
+					contextMenu.setVisible( true );
+			}
+		});
+
+		// Validate the request when it changes
+		this.requestComposite.getStyledText().addModifyListener( new ModifyListener() {
+			@Override
+			public void modifyText( ModifyEvent e ) {
+				validate();
+			}
+		});
 	}
 
 
@@ -309,6 +437,7 @@ public class RequestTab extends Composite {
         GridDataFactory.swtDefaults().grab( true, false ).align( SWT.FILL, SWT.END ).indent( 0, 8 ).applyTo( sendGroup );
         sendGroup.setText( "Message Sending" );
 
+        // The "send "options
         Composite metaComposite = new Composite( sendGroup, SWT.NONE );
         GridLayoutFactory.swtDefaults().numColumns( 2 ).margins( 5, 3 ).spacing( 5, 10 ).applyTo( metaComposite );
 
@@ -326,6 +455,7 @@ public class RequestTab extends Composite {
         this.sendButton.setText( "Send  " );
         this.sendButton.setToolTipText( "Send the Request to the Target Service" );
         this.sendButton.setImage( this.sendImg );
+        this.sendButton.setEnabled( false );
 
 
         // ... and to display reports
@@ -333,12 +463,50 @@ public class RequestTab extends Composite {
         GridLayoutFactory.swtDefaults().margins( 25, 8 ).applyTo( reportingComposite );
         GridDataFactory.fillDefaults().span( 1, 2 ).grab( true, true ).align( SWT.FILL, SWT.END ).applyTo( reportingComposite );
 
-        this.reportingStyledText = new StyledText( reportingComposite, SWT.MULTI );
+        // Use a sub-composite, to keep UI consistency when updating the messages (parent's layout())
+        Composite subComposite = new Composite( reportingComposite, SWT.NONE );
+        GridLayoutFactory.swtDefaults().margins( 0, 0 ).numColumns( 2 ).applyTo( subComposite );
+        subComposite.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
+
+        this.reportingImageLabel = new Label( subComposite, SWT.NONE );
+        this.reportingStyledText = new StyledText( subComposite, SWT.MULTI );
         this.reportingStyledText.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
         this.reportingProgressBar = new ProgressBar( reportingComposite, SWT.INDETERMINATE );
         this.reportingProgressBar.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
         this.reportingProgressBar.setVisible( false );
+
+
+        // What to do when "send" is clicked?
+        this.sendButton.addListener( SWT.Selection, new Listener() {
+        	@Override
+        	public void handleEvent( Event e ) {
+
+        		RequestMessageBean req = null;
+        		try {
+					req = createRequestInstance();
+					RequestTab.this.clientApp.getPetalsFacade().send( req );
+					updateMessage( "The request was successfully sent.", IStatus.INFO );
+
+				} catch( Exception e1 ) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+
+				} finally {
+
+					if( req != null ) {
+						File f = Utils.getNewHistoryFile( req );
+						try {
+							Utils.saveRequest( f, req, false );
+
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+					}
+				}
+        	}
+        });
 	}
 
 
@@ -352,6 +520,15 @@ public class RequestTab extends Composite {
 		super.dispose();
 		if( this.sendImg != null && ! this.sendImg.isDisposed())
 			this.sendImg.dispose();
+
+		if( this.errorImg != null && ! this.errorImg.isDisposed())
+			this.errorImg.dispose();
+
+		if( this.warningImg != null && ! this.warningImg.isDisposed())
+			this.warningImg.dispose();
+
+		if( this.infoImg != null && ! this.infoImg.isDisposed())
+			this.infoImg.dispose();
 	}
 
 
@@ -378,21 +555,15 @@ public class RequestTab extends Composite {
 	/**
 	 * Updates the progress report part.
 	 * <p>
-	 * If the description is not null, this disables the "send" button, shows the action description and activates a progress bar.
-	 * Otherwise, the "send" button is enabled, and no report is shown anymore.
+	 * If the description is not null, it shows the action description and activates a progress bar.
+	 * Otherwise, no report is shown anymore.
 	 * </p>
 	 *
 	 * @param description the action's description or null to stop reporting information
 	 */
 	private void updateProgressReport( String description ) {
-
-		boolean shown = description != null;
-		this.sendButton.setEnabled( shown );
-		this.reportingProgressBar.setVisible( shown );
-
-		this.reportingStyledText.setStyleRanges( new StyleRange[ 0 ]);
-		this.reportingStyledText.setText( description != null ? description : "" );
-		this.reportingStyledText.getParent().layout();
+		this.reportingProgressBar.setVisible( description != null );
+		updateMessage( description, IStatus.OK );
 	}
 
 
@@ -412,9 +583,6 @@ public class RequestTab extends Composite {
 			@Override
 			public void run() {
 
-				// Ready to be sent?
-				validate();
-
 				// Update the list of operations to show
 				RequestTab.this.operationViewer.setInput( ops );
 				RequestTab.this.operationViewer.refresh();
@@ -422,7 +590,12 @@ public class RequestTab extends Composite {
 				if( ops.size() > 0 )
 					RequestTab.this.operationViewer.setSelection( new StructuredSelection( ops.get( 0 )));
 
+				// Update the buttons
+				RequestTab.this.showWsdlButton.setEnabled( RequestTab.this.wsdlDescriptionAsString != null );
+
+				// Complete the operation
 				updateProgressReport( null );
+				RequestTab.this.operationViewer.getCCombo().notifyListeners( SWT.Selection, new Event());
 			}
 		};
 
@@ -432,19 +605,20 @@ public class RequestTab extends Composite {
 			public void run() {
 				try {
 					// Resolve things
+					PetalsFacade petalsFacade = RequestTab.this.clientApp.getPetalsFacade();
 					ServiceEndpoint resolvedSe = null;
 					if( resolvedSe == null )
-						resolvedSe = RequestTab.this.petalsFacade.resolveServiceEndpoint( itfName, srvName, edptName );
+						resolvedSe = petalsFacade.resolveServiceEndpoint( itfName, srvName, edptName );
 
 					Document doc = null;
 					if( resolvedSe != null )
-						doc = RequestTab.this.petalsFacade.findWsdlDescriptionAsDocument( resolvedSe );
+						doc = petalsFacade.findWsdlDescriptionAsDocument( resolvedSe );
 
 					// Store the WSDL as a string, as we may need to display it later
 					RequestTab.this.wsdlDescriptionAsString = doc == null ? null : Utils.writeDocument( doc, false );
 
 					// Parse the document as a WSDL
-					WSDLReader wsdlReader = RequestTab.this.petalsFacade.getWsdlReader();
+					WSDLReader wsdlReader = petalsFacade.getWsdlReader();
 					RequestTab.this.wsdlDescription = wsdlReader != null && doc != null ? wsdlReader.read( doc ) : null;
 
 					// Get the operations
@@ -501,7 +675,9 @@ public class RequestTab extends Composite {
 			@Override
 			public void run() {
 				try {
-					List<ServiceEndpoint> serviceEndpoints = RequestTab.this.petalsFacade.getAllServiceEndpoints();
+					List<ServiceEndpoint> serviceEndpoints =
+							RequestTab.this.clientApp.getPetalsFacade().getAllServiceEndpoints();
+
 					if( serviceEndpoints != null )
 						ses.addAll( serviceEndpoints );
 
@@ -524,14 +700,46 @@ public class RequestTab extends Composite {
 
 
 	/**
-	 * Validates the user entries.
+	 * Updates the message being displayed.
+	 * @param msg a message (null to display nothing)
+	 * @param status an IStatus constant for the message's severity
 	 */
-	private void validate() {
+	private void updateMessage( String msg, int status ) {
 
-		String msg = null;
+		Color color = null;
+		Image img = null;
+		if( msg != null ) {
+			if( status == IStatus.INFO ) {
+				img = this.infoImg;
+				color = getDisplay().getSystemColor( SWT.COLOR_BLACK );
 
+			} else if( status == IStatus.OK ) {
+				img = null;
+				color = getDisplay().getSystemColor( SWT.COLOR_BLACK );
 
-		RequestTab.this.showWsdlButton.setEnabled( msg == null );
+			} else if( status == IStatus.WARNING ) {
+				img = this.warningImg;
+				color = this.clientApp.getColorManager().getOrangeColor();
+
+			} else if( status == IStatus.ERROR ) {
+				img = this.errorImg;
+				color = getDisplay().getSystemColor( SWT.COLOR_RED );
+			}
+		}
+
+		this.reportingImageLabel.setImage( img );
+		if( msg == null || color == null )
+			this.reportingStyledText.setText( "" );
+		else {
+			this.reportingStyledText.setText( msg );
+			StyleRange sr = new StyleRange();
+			sr.foreground = color;
+			sr.start = 0;
+			sr.length = msg.length();
+			this.reportingStyledText.setStyleRange( sr );
+		}
+
+		this.reportingImageLabel.getParent().layout();
 	}
 
 

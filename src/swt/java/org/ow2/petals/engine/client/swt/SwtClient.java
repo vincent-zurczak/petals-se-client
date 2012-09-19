@@ -123,4 +123,11 @@ public class SwtClient implements IClientUI {
 	public void setPetalsLogger(Logger logger) {
 		// TODO Auto-generated method stub
 	}
+
+	/**
+	 * Restarts the user interface (e.g. to take new preferences into account).
+	 */
+	public void restartUserInterface() {
+
+	}
 }

@@ -31,6 +31,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
 import java.util.LinkedHashSet;
 import java.util.Properties;
@@ -395,11 +396,12 @@ public class Utils {
 
 		// Write it
 		FileOutputStream fos = null;
-		if( ! withAttachments )
-			fos = new FileOutputStream( target );
-		else
-			fos = new FileOutputStream( new File( target, target.getName() + ".txt" ));
+		File targetFile = withAttachments ? new File( target, target.getName() + ".txt" ) : target;
+		if( ! targetFile.getParentFile().exists()
+				&& ! targetFile.getParentFile().mkdirs())
+			throw new IOException( "Could not create the history directory: " + targetFile.getParentFile());
 
+		fos = new FileOutputStream( targetFile );
 		try {
 			props.store( fos, "Saved from the Petals Client Component" );
 
@@ -409,5 +411,23 @@ public class Utils {
 		}
 
 		return req;
+	}
+
+
+	/**
+	 * Gets a new file to save a request in the history.
+	 * @param req the request to save (file name)
+	 * @return a file (the file should not already exist, but this is not guaranteed)
+	 */
+	public static File getNewHistoryFile( RequestMessageBean req ) {
+
+		String name = req.getInterfaceName().getLocalPart();
+		if( req.getServiceName() != null )
+			name += "--" + req.getServiceName().getLocalPart();
+		if( req.getEndpointName() != null )
+			name += "--" + req.getEndpointName();
+
+		name += "--" + new SimpleDateFormat( "yyyy-MM-dd--HH-mm-ss'.txt'" ).format( new GregorianCalendar().getTime());
+		return new File( PreferencesManager.INSTANCE.getHistoryDirectory(), name );
 	}
 }

@@ -51,8 +51,8 @@ import org.eclipse.swt.widgets.TreeColumn;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.RequestMessageBeanUtils;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
+import org.ow2.petals.engine.client.swt.ClientApplication;
 import org.ow2.petals.engine.client.swt.SwtUtils;
-import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.viewers.HistoryContentProvider;
 import org.ow2.petals.engine.client.swt.viewers.HistoryLabelProvider;
 import org.ow2.petals.engine.client.swt.viewers.HistoryViewerFilter;
@@ -72,9 +72,9 @@ public class HistoryTab extends Composite {
 	/**
 	 * Constructor.
 	 * @param parent
-	 * @param colorManager
+	 * @param clientApp
 	 */
-	public HistoryTab( Composite parent, ColorCacheManager colorManager ) {
+	public HistoryTab( Composite parent, ClientApplication clientApp ) {
 
 		// Root elements
 		super( parent, SWT.NONE );
@@ -146,7 +146,7 @@ public class HistoryTab extends Composite {
 
 		new Label( container, SWT.NONE ).setText( "Quick Overview of the XML Payload" );
 		new Label( container, SWT.NONE ).setText( "The Request Properties" );
-		final StyledText xmlPayloadStyledText = SwtUtils.createXmlViewer( container, colorManager, true );
+		final StyledText xmlPayloadStyledText = SwtUtils.createXmlViewer( container, clientApp.getColorManager(), true );
 
 
 		subContainer = new Composite( container, SWT.NONE );

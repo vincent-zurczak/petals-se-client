@@ -1,3 +1,22 @@
+/****************************************************************************
+ *
+ * Copyright (c) 2012, Linagora
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ *****************************************************************************/
 
 package org.ow2.petals.engine.client.swt;
 
@@ -31,6 +50,10 @@ public class ClientApplication extends ApplicationWindow {
 	private final Image appli16, appli32, appli48;
 	private final PetalsFacade petalsFacade;
 	private final ColorCacheManager colorManager;
+
+	private HistoryTab historyTab;
+	private RequestTab requestTab;
+	private SwtClient swtClient;
 
 
 
@@ -104,23 +127,67 @@ public class ClientApplication extends ApplicationWindow {
 		TabItem tabItem = new TabItem( tabFolder, SWT.NONE );
 	    tabItem.setText( "Client" );
 	    tabItem.setToolTipText( "The client area" );
-	    tabItem.setControl( new RequestTab( tabFolder, this.petalsFacade, this.colorManager ));
+	    this.requestTab = new RequestTab( tabFolder, this );
+	    tabItem.setControl( this.requestTab );
 
 	    tabItem = new TabItem( tabFolder, SWT.NONE );
 	    tabItem.setText( "History" );
         tabItem.setToolTipText( "The requests history" );
-	    tabItem.setControl( new HistoryTab( tabFolder, this.colorManager ));
+        this.historyTab = new HistoryTab( tabFolder, this );
+	    tabItem.setControl( this.historyTab );
 
 	    tabItem = new TabItem( tabFolder, SWT.NONE );
 	    tabItem.setText( "Preferences" );
         tabItem.setToolTipText( "The user preferences" );
-	    tabItem.setControl( new PreferencesTab( tabFolder, this.colorManager ));
+	    tabItem.setControl( new PreferencesTab( tabFolder, this ));
 
 		return container;
 	}
 
 
+	/**
+	 * @return the petalsFacade
+	 */
+	public PetalsFacade getPetalsFacade() {
+		return this.petalsFacade;
+	}
+
+
+	/**
+	 * @return the colorManager
+	 */
+	public ColorCacheManager getColorManager() {
+		return this.colorManager;
+	}
+
+
+	/**
+	 * Refreshes the history tab.
+	 */
+	public void refreshHistory() {
+		if( this.historyTab != null )
+			this.historyTab.refreshHistory();
+	}
+
+
+	/**
+	 * Validates the request.
+	 */
+	public void validateRequest() {
+		if( this.requestTab != null )
+			this.requestTab.validate();
+	}
+
+
     /**
+	 * @param swtClient the swtClient to set
+	 */
+	public void setSwtClient( SwtClient swtClient ) {
+		this.swtClient = swtClient;
+	}
+
+
+	/**
 	 * Creates the menu.
 	 * @param container
 	 */
@@ -132,11 +199,39 @@ public class ClientApplication extends ApplicationWindow {
 
 		// The file menu
 		MenuItem fileItem = new MenuItem( menuBar, SWT.CASCADE );
-		fileItem.setText ( "&Help" );
+		fileItem.setText ( "&File" );
 		Menu submenu = new Menu( getShell(), SWT.DROP_DOWN );
 		fileItem.setMenu( submenu );
 
 		MenuItem item = new MenuItem( submenu, SWT.PUSH );
+		item.setText( "Clear the Request Tab" );
+		item.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent( Event e ) {
+				if( ClientApplication.this.requestTab != null )
+					ClientApplication.this.requestTab.clearTab();
+			}
+		});
+
+		new MenuItem( submenu, SWT.SEPARATOR );
+		item = new MenuItem( submenu, SWT.PUSH );
+		item.setText( "Restart the User Interface" );
+		item.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent( Event e ) {
+				if( ClientApplication.this.swtClient != null )
+					ClientApplication.this.swtClient.restartUserInterface();
+			}
+		});
+
+
+		// The help menu
+		fileItem = new MenuItem( menuBar, SWT.CASCADE );
+		fileItem.setText ( "&Help" );
+		submenu = new Menu( getShell(), SWT.DROP_DOWN );
+		fileItem.setMenu( submenu );
+
+		item = new MenuItem( submenu, SWT.PUSH );
 		item.setText( "About" );
 		item.addListener( SWT.Selection, new Listener() {
 			@Override

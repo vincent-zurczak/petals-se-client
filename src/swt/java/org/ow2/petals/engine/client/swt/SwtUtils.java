@@ -63,10 +63,11 @@ public class SwtUtils {
 		InputStream in = null;
 		try {
 			in = SwtUtils.class.getResourceAsStream( relativePath );
-			if( in != null ) {
-				ImageData imgData = new ImageData( in );
-				result = new Image( Display.getDefault(), imgData );
-			}
+			if( in == null )
+				throw new NullPointerException( "No image could be found at " + relativePath );
+
+			ImageData imgData = new ImageData( in );
+			result = new Image( Display.getDefault(), imgData );
 
 		} catch( Exception e ) {
 			e.printStackTrace();

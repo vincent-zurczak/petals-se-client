@@ -36,6 +36,7 @@ import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion.XmlRegionTy
 public class ColorCacheManager {
 
 	private final Map<XmlRegionType,Color> regionTypeTocolor;
+	private final Color orangeColor;
 
 
 	/**
@@ -43,6 +44,7 @@ public class ColorCacheManager {
 	 */
 	public ColorCacheManager() {
 
+		this.orangeColor = new Color( Display.getCurrent(), 222, 159, 38 );
 		this.regionTypeTocolor = new ConcurrentHashMap<XmlRegion.XmlRegionType,Color> ();
 		for( XmlRegionType xr : XmlRegionType.values())
 			updateColor( xr );
@@ -75,6 +77,8 @@ public class ColorCacheManager {
 		}
 
 		this.regionTypeTocolor.clear();
+		if( this.orangeColor != null && ! this.orangeColor.isDisposed())
+			this.orangeColor.dispose();
 	}
 
 
@@ -84,5 +88,13 @@ public class ColorCacheManager {
 	 */
 	public Color getColor( XmlRegionType xrt ) {
 		return this.regionTypeTocolor.get( xrt );
+	}
+
+
+	/**
+	 * @return the orangeColor
+	 */
+	public Color getOrangeColor() {
+		return this.orangeColor;
 	}
 }

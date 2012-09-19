@@ -56,6 +56,7 @@ import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.Utils;
+import org.ow2.petals.engine.client.swt.ClientApplication;
 import org.ow2.petals.engine.client.swt.SwtUtils;
 import org.ow2.petals.engine.client.swt.dialogs.ClearHistoryDialog;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
@@ -70,15 +71,16 @@ public class PreferencesTab extends Composite {
 	/**
 	 * Constructor.
 	 * @param parent
-	 * @param colorManager
+	 * @param clientApp
 	 */
-	public PreferencesTab( Composite parent, final ColorCacheManager colorManager ) {
+	public PreferencesTab( Composite parent, final ClientApplication clientApp ) {
 
 		// Root elements
 		super( parent, SWT.NONE );
 		GridLayoutFactory.swtDefaults().spacing( 0, 0 ).applyTo( this );
 		setLayoutData( new GridData( GridData.FILL_BOTH ));
 
+		final ColorCacheManager colorManager = clientApp.getColorManager();
 		new Label( this, SWT.NONE ).setText( "The preferences for this client application." );
 
 
@@ -143,8 +145,10 @@ public class PreferencesTab extends Composite {
 			@Override
 			public void handleEvent( Event e ) {
 				ClearHistoryDialog dlg = new ClearHistoryDialog( getShell());
-				if( dlg.open() == Window.OK )
+				if( dlg.open() == Window.OK ) {
 					SwtUtils.clearHistoryWithProgressBar( getShell(), dlg.getDays());
+					clientApp.refreshHistory();
+				}
 			}
 		});
 

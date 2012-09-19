@@ -11,7 +11,7 @@ Runing an Debugging the User Interface
 --------------------------------------
 
 Under *test/main/java*, in the package *org.ow2.petals.engine.client.swt.manual*, execute the class **Main**.
-This will open a dialog with the component's user interface. a mock is used in place of Petals ESB.
+This will open a dialog with the component's user interface. A mock is used in place of Petals ESB.
 
 
 Compiling the Component
