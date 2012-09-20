@@ -24,6 +24,7 @@ import java.io.File;
 
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerFilter;
+import org.ow2.petals.engine.client.misc.Utils;
 
 /**
  * A viewer filter for the history.
@@ -44,8 +45,8 @@ public class HistoryViewerFilter extends ViewerFilter {
 
 		boolean result = true;
 		if( element instanceof File
-				&& this.searchText != null ) {
-			result = ((File) element).getName().contains( this.searchText );
+				&& ! Utils.isEmptyString( this.searchText )) {
+			result = ((File) element).getName().toLowerCase().contains( this.searchText.toLowerCase());
 		}
 
 		return result;

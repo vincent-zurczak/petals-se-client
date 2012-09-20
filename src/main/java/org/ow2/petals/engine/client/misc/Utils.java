@@ -421,11 +421,13 @@ public class Utils {
 	 */
 	public static File getNewHistoryFile( RequestMessageBean req ) {
 
-		String name = req.getInterfaceName().getLocalPart();
-		if( req.getServiceName() != null )
-			name += "--" + req.getServiceName().getLocalPart();
-		if( req.getEndpointName() != null )
-			name += "--" + req.getEndpointName();
+		String name = "i=" + req.getInterfaceName().getLocalPart();
+		if( req.getServiceName() != null
+				&& ! Utils.isEmptyString( req.getServiceName().getLocalPart()))
+			name += "==s=" + req.getServiceName().getLocalPart();
+
+		if( ! Utils.isEmptyString( req.getEndpointName()))
+			name += "==e=" + req.getEndpointName();
 
 		name += "--" + new SimpleDateFormat( "yyyy-MM-dd--HH-mm-ss'.txt'" ).format( new GregorianCalendar().getTime());
 		return new File( PreferencesManager.INSTANCE.getHistoryDirectory(), name );

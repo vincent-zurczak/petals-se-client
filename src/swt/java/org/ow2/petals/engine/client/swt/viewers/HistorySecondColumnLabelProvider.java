@@ -18,57 +18,35 @@
  *
  *****************************************************************************/
 
-package org.ow2.petals.engine.client.model;
+package org.ow2.petals.engine.client.swt.viewers;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.GregorianCalendar;
+
+import org.eclipse.jface.viewers.ColumnLabelProvider;
 
 /**
- * The Message Exchange Patterns.
+ * A label provider for the second column of the history viewer.
  * @author Vincent Zurczak - Linagora
  */
-public enum Mep {
+public class HistorySecondColumnLabelProvider extends ColumnLabelProvider {
 
-    IN_ONLY( "InOnly" ),
-    IN_OUT( "InOut" ),
-    ROBUST_IN_ONLY( "RobustInOnly" ),
-    IN_OPTIONAL_OUT( "InOptionalOut" );
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.jface.viewers.ColumnLabelProvider
+	 * #getText(java.lang.Object)
+	 */
+	@Override
+	public String getText( Object o ) {
 
+		String result = "";
+		if( o instanceof File ) {
+			GregorianCalendar calendar = new GregorianCalendar();
+			calendar.setTimeInMillis( ((File) o).lastModified());
+			result = new SimpleDateFormat( "HH:mm:ss" ).format( calendar.getTime());
+		}
 
-    /**
-     * The string value.
-     */
-    private String value;
-
-    /**
-     * Constructor.
-     * @param value
-     */
-    Mep( String value ) {
-        this.value = value;
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see java.lang.Enum#toString()
-     */
-    @Override
-    public String toString() {
-        return this.value;
-    }
-
-    /**
-     * A more flexible implementation to resolve a MEP from a string.
-     * @param mep
-     * @return
-     */
-    public static Mep whichMep( String mep ) {
-
-    	Mep result = null;
-    	for( Mep m : values()) {
-    		if( m.toString().equals( mep )) {
-    			result = m;
-    			break;
-    		}
-    	}
-
-    	return result;
-    }
+		return result;
+	}
 }

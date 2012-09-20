@@ -34,6 +34,7 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.layout.GridData;
@@ -193,5 +194,22 @@ public class SwtUtils {
 		} catch( Exception e ) {
 			// TODO
 		}
+	}
+
+
+	/**
+	 * @param originalData
+	 * @param additionalStyle
+	 * @return
+	 */
+	public static FontData[] getModifiedFontData( FontData[] originalData, int additionalStyle ) {
+
+		FontData[] styleData = new FontData[ originalData.length ];
+		for( int i=0; i<styleData.length; i++ ) {
+			FontData base = originalData[ i ];
+			styleData[ i ] = new FontData( base.getName(), base.getHeight(), base.getStyle() | additionalStyle );
+		}
+
+		return styleData;
 	}
 }

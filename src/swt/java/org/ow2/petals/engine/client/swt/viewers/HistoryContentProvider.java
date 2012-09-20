@@ -69,7 +69,7 @@ public class HistoryContentProvider implements ITreeContentProvider {
 			File[] files = ((File) newInput).listFiles( new FileFilter() {
 				@Override
 				public boolean accept( File f ) {
-					return f.isFile() && f.getName().toLowerCase().endsWith( ".msg" );
+					return f.isFile() && f.getName().toLowerCase().endsWith( ".txt" );
 				}
 			});
 

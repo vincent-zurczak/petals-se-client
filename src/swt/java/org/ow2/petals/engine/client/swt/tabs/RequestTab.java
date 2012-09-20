@@ -498,6 +498,7 @@ public class RequestTab extends Composite {
 						File f = Utils.getNewHistoryFile( req );
 						try {
 							Utils.saveRequest( f, req, false );
+							RequestTab.this.clientApp.refreshHistory();
 
 						} catch (IOException e1) {
 							// TODO Auto-generated catch block

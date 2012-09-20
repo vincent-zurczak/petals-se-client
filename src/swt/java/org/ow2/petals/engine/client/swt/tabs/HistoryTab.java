@@ -33,13 +33,18 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableLayout;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.jface.viewers.TreeViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -47,14 +52,14 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.swt.widgets.TreeColumn;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.RequestMessageBeanUtils;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
 import org.ow2.petals.engine.client.swt.ClientApplication;
 import org.ow2.petals.engine.client.swt.SwtUtils;
 import org.ow2.petals.engine.client.swt.viewers.HistoryContentProvider;
-import org.ow2.petals.engine.client.swt.viewers.HistoryLabelProvider;
+import org.ow2.petals.engine.client.swt.viewers.HistoryFirstColumnLabelProvider;
+import org.ow2.petals.engine.client.swt.viewers.HistorySecondColumnLabelProvider;
 import org.ow2.petals.engine.client.swt.viewers.HistoryViewerFilter;
 
 /**
@@ -67,6 +72,7 @@ public class HistoryTab extends Composite {
 
 	private final TreeViewer historyViewer;
 	private final Image searchImage;
+	private final Font boldFont;
 
 
 	/**
@@ -84,6 +90,12 @@ public class HistoryTab extends Composite {
 		SashForm sashForm = new SashForm( this, SWT.VERTICAL );
 		sashForm.setLayoutData( new GridData( GridData.FILL_BOTH ));
 		sashForm.setSashWidth( 5 );
+
+
+		// Create the bold font
+		FontData[] fd = getFont().getFontData();
+		fd = SwtUtils.getModifiedFontData( fd, SWT.BOLD );
+		this.boldFont = new Font( getDisplay(), fd );
 
 
 		// The header, with the search bar
@@ -109,22 +121,40 @@ public class HistoryTab extends Composite {
 		// The history viewer
 		this.historyViewer = new TreeViewer( container, SWT.BORDER | SWT.FULL_SELECTION | SWT.SINGLE );
 		this.historyViewer.setContentProvider( new HistoryContentProvider());
-		this.historyViewer.setLabelProvider( new HistoryLabelProvider());
 
+		// Columns
+		TreeViewerColumn column = new TreeViewerColumn( this.historyViewer, SWT.BEGINNING );
+		column.getColumn().setText( "Interface Name" );
+		column.setLabelProvider( new HistoryFirstColumnLabelProvider( 0, this.boldFont ));
+
+		column = new TreeViewerColumn( this.historyViewer, SWT.CENTER );
+		column.getColumn().setText( "Service Name" );
+		column.setLabelProvider( new HistoryFirstColumnLabelProvider( 1, this.boldFont ));
+
+		column = new TreeViewerColumn( this.historyViewer, SWT.CENTER );
+		column.getColumn().setText( "End-point Name" );
+		column.setLabelProvider( new HistoryFirstColumnLabelProvider( 2, this.boldFont ));
+
+		column = new TreeViewerColumn( this.historyViewer, SWT.CENTER );
+		column.getColumn().setText( "Date" );
+		column.setLabelProvider( new HistorySecondColumnLabelProvider());
+
+
+		// Remaining properties
 		final HistoryViewerFilter historyViewerFilter = new HistoryViewerFilter();
 		this.historyViewer.addFilter( historyViewerFilter );
 		this.historyViewer.setInput( PreferencesManager.INSTANCE.getHistoryDirectory());
+		this.historyViewer.expandAll();
 
 		this.historyViewer.getTree().setLayoutData( new GridData( GridData.FILL_BOTH ));
 		this.historyViewer.getTree().setHeaderVisible( true );
 		this.historyViewer.getTree().setLinesVisible( true );
 
-	    new TreeColumn( this.historyViewer.getTree(), SWT.NONE ).setText( "Key" );
-	    new TreeColumn( this.historyViewer.getTree(), SWT.NONE ).setText( "Date" );
-
 	    TableLayout layout = new TableLayout();
-	    layout.addColumnData( new ColumnWeightData( 50, 75, true ));
-	    layout.addColumnData( new ColumnWeightData( 50, 75, true ));
+	    layout.addColumnData( new ColumnWeightData( 30, 75, true ));
+	    layout.addColumnData( new ColumnWeightData( 30, 75, true ));
+	    layout.addColumnData( new ColumnWeightData( 30, 75, true ));
+	    layout.addColumnData( new ColumnWeightData( 10, 75, true ));
 	    this.historyViewer.getTree().setLayout( layout );
 
 	    Link clearHistoryLink = new Link( container, SWT.NONE );
@@ -270,6 +300,19 @@ public class HistoryTab extends Composite {
 				}
 			}
 		});
+
+		searchText.addKeyListener( new KeyAdapter() {
+			@Override
+			public void keyPressed( KeyEvent e ) {
+
+				Text text = (Text) e.widget;
+				if( text.getText().equals( SEARCH_TEXT )) {
+					e.doit = false;
+					text.setText( String.valueOf( e.character ));
+					text.setSelection( 1 );
+				}
+			}
+		});
 	}
 
 
@@ -279,6 +322,7 @@ public class HistoryTab extends Composite {
 	public void refreshHistory() {
 		this.historyViewer.setInput( PreferencesManager.INSTANCE.getHistoryDirectory());
 		this.historyViewer.refresh();
+		this.historyViewer.expandAll();
 	}
 
 
@@ -292,6 +336,9 @@ public class HistoryTab extends Composite {
 
 		if( this.searchImage != null && ! this.searchImage.isDisposed())
 			this.searchImage.dispose();
+
+		if( this.boldFont != null && ! this.boldFont.isDisposed())
+			this.boldFont.dispose();
 
 		super.dispose();
 	}

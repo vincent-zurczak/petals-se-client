@@ -70,7 +70,7 @@ public class RequestMessageBeanUtils {
         result.setXmlPayload( properties.getProperty( XML_PAYLOAD ));
 
         data = properties.getProperty( MEP );
-        result.setMep( Mep.valueOf( data ));
+        result.setMep( Mep.whichMep( data ));
 
         data = properties.getProperty( TIMEOUT, "-1" );
         result.setTimeout( Long.valueOf( data ));
