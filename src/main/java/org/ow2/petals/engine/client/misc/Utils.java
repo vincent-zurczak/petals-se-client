@@ -29,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
@@ -38,6 +39,8 @@ import java.util.Properties;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
@@ -56,6 +59,7 @@ import org.ow2.easywsdl.wsdl.api.InterfaceType;
 import org.ow2.easywsdl.wsdl.api.Operation;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
 import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 import com.ebmwebsourcing.easycommons.xml.XMLHelper;
 
@@ -292,6 +296,23 @@ public class Utils {
 
 
 	/**
+     * Builds a document from a string.
+     * @param text the text to parse as a XML document
+     * @return the document or null if it could not be loaded
+     * @throws ParserConfigurationException
+     * @throws IOException
+     * @throws SAXException
+     */
+    public static Document buildDocument( String text )
+    throws SAXException, IOException, ParserConfigurationException {
+
+        DocumentBuilderFactory db = DocumentBuilderFactory.newInstance();
+        db.setNamespaceAware( true );
+        return db.newDocumentBuilder().parse( new ByteArrayInputStream( text.getBytes()));
+    }
+
+
+	/**
 	 * Closes a stream quietly.
 	 * @param stream the stream to close (not null)
 	 */
@@ -432,4 +453,18 @@ public class Utils {
 		name += "--" + new SimpleDateFormat( "yyyy-MM-dd--HH-mm-ss'.txt'" ).format( new GregorianCalendar().getTime());
 		return new File( PreferencesManager.INSTANCE.getHistoryDirectory(), name );
 	}
+
+
+	/**
+     * Returns the stack trace as a string.
+     * @param throwable a throwable (not null)
+     * @return a non-null string
+     */
+    public static final String extractStackTrace( Throwable throwable ) {
+
+        final StringWriter sw = new StringWriter();
+        throwable.printStackTrace( new PrintWriter( sw ));
+        sw.flush();
+        return sw.toString();
+    }
 }

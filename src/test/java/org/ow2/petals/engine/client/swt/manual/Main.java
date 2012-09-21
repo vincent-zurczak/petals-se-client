@@ -20,7 +20,7 @@
 
 package org.ow2.petals.engine.client.swt.manual;
 
-import org.ow2.petals.engine.client.swt.ClientApplication;
+import org.ow2.petals.engine.client.swt.SwtClient;
 
 /**
  * A class to test manually the user interface.
@@ -33,8 +33,8 @@ public class Main {
      */
     public static void main( String[] args ) {
 
-        ClientApplication app = new ClientApplication( new MockPetalsFacade( false, true ));
-        app.setBlockOnOpen( true );
-        app.open();
+    	SwtClient swtClient = new SwtClient();
+        swtClient.setPetalsFacade( new MockPetalsFacade( false, true ));
+        swtClient.open();
     }
 }

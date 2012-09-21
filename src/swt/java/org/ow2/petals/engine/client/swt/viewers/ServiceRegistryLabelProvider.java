@@ -22,9 +22,10 @@ package org.ow2.petals.engine.client.swt.viewers;
 
 import javax.xml.namespace.QName;
 
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.swt.graphics.Image;
-import org.ow2.petals.engine.client.swt.SwtUtils;
+import org.ow2.petals.engine.client.swt.ImageIds;
 import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog.EdptBean;
 import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog.ItfBean;
 import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog.SrvBean;
@@ -42,9 +43,9 @@ public class ServiceRegistryLabelProvider extends ColumnLabelProvider {
 	 * Constructor.
 	 */
 	public ServiceRegistryLabelProvider() {
-		this.itfImage = SwtUtils.loadImage( "/contract_16x16.gif" );
-		this.srvImage = SwtUtils.loadImage( "/service_16x16.gif" );
-		this.edptImage = SwtUtils.loadImage( "/endpoint_16x16.gif" );
+		this.itfImage = JFaceResources.getImage( ImageIds.CONTRACT_16x16 );
+		this.srvImage = JFaceResources.getImage( ImageIds.SERVICE_16x16 );
+		this.edptImage = JFaceResources.getImage( ImageIds.ENDPOINT_16x16 );
 	}
 
 

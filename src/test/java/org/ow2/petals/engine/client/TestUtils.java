@@ -20,7 +20,6 @@
 
 package org.ow2.petals.engine.client;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -37,23 +36,6 @@ import org.xml.sax.SAXException;
  * @author Vincent Zurczak - Linagora
  */
 public class TestUtils {
-
-	/**
-     * Builds a document from a string.
-     * @param text the text to parse as a XML document
-     * @return the document or null if it could not be loaded
-     * @throws ParserConfigurationException
-     * @throws IOException
-     * @throws SAXException
-     */
-    public static Document buildDocument( String text )
-    throws SAXException, IOException, ParserConfigurationException {
-
-        DocumentBuilderFactory db = DocumentBuilderFactory.newInstance();
-        db.setNamespaceAware( true );
-        return db.newDocumentBuilder().parse( new ByteArrayInputStream( text.getBytes()));
-    }
-
 
     /**
      * Builds a document from a URL.

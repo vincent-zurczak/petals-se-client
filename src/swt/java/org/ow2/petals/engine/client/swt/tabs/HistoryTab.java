@@ -24,9 +24,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.logging.Level;
 
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -45,7 +47,6 @@ import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -54,8 +55,10 @@ import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Text;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.RequestMessageBeanUtils;
+import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
 import org.ow2.petals.engine.client.swt.ClientApplication;
+import org.ow2.petals.engine.client.swt.ImageIds;
 import org.ow2.petals.engine.client.swt.SwtUtils;
 import org.ow2.petals.engine.client.swt.viewers.HistoryContentProvider;
 import org.ow2.petals.engine.client.swt.viewers.HistoryFirstColumnLabelProvider;
@@ -71,7 +74,6 @@ public class HistoryTab extends Composite {
 	private final static String SEARCH_TEXT = "Filter...";
 
 	private final TreeViewer historyViewer;
-	private final Image searchImage;
 	private final Font boldFont;
 
 
@@ -80,7 +82,7 @@ public class HistoryTab extends Composite {
 	 * @param parent
 	 * @param clientApp
 	 */
-	public HistoryTab( Composite parent, ClientApplication clientApp ) {
+	public HistoryTab( Composite parent, final ClientApplication clientApp ) {
 
 		// Root elements
 		super( parent, SWT.NONE );
@@ -112,9 +114,8 @@ public class HistoryTab extends Composite {
 		searchText.setText( SEARCH_TEXT );
 		GridDataFactory.swtDefaults().grab( true, false ).align( SWT.END, SWT.CENTER ).hint( 200, SWT.DEFAULT ).applyTo( searchText );
 
-		this.searchImage = SwtUtils.loadImage( "/search_16x16.png" );
 		Label l = new Label( subContainer, SWT.NONE );
-		l.setImage( this.searchImage );
+		l.setImage( JFaceResources.getImage( ImageIds.SEARCH_16x16 ));
 		GridDataFactory.swtDefaults().align( SWT.END, SWT.CENTER ).applyTo( l );
 
 
@@ -163,7 +164,7 @@ public class HistoryTab extends Composite {
 	    clearHistoryLink.addMouseListener( new MouseAdapter() {
         	@Override
         	public void mouseDown( MouseEvent e ) {
-        		SwtUtils.clearHistoryWithProgressBar( getShell(), -1 );
+        		SwtUtils.clearHistoryWithProgressBar( getShell(), -1, clientApp );
         		refreshHistory();
         	}
 		});
@@ -232,18 +233,16 @@ public class HistoryTab extends Composite {
 				RequestMessageBean req = null;
 				String date = null;
 				if( o instanceof File ) {
-
 					try {
 						InputStream is = new FileInputStream((File) o);
 						Properties props = new Properties();
 						props.load( is );
 
 						req = RequestMessageBeanUtils.read( props );
-						props.setProperty( "xxx_date" , "" );
+						date = HistoryFirstColumnLabelProvider.formatDateStr(((File) o).lastModified(), true );
 
 					} catch( Exception e1 ) {
-						// TODO: handle it correctly
-						e1.printStackTrace();
+						clientApp.log( "Error while reading a history entry.", e1, Level.INFO );
 					}
 				}
 
@@ -251,20 +250,20 @@ public class HistoryTab extends Composite {
 				if( req != null ) {
 					xmlPayloadStyledText.setText( req.getXmlPayload() != null ? req.getXmlPayload() : "" );
 					itfNameLabel.setText( req.getInterfaceName().getLocalPart() + " - "  + req.getInterfaceName().getNamespaceURI());
-					edptNameLabel.setText( req.getEndpointName() == null ? "" : req.getEndpointName());
+					edptNameLabel.setText( Utils.isEmptyString( req.getEndpointName()) ? "-" : req.getEndpointName());
 					if( req.getServiceName() != null )
 						srvNameLabel.setText( req.getServiceName().getLocalPart() + " - "  + req.getServiceName().getNamespaceURI());
 					else
-						srvNameLabel.setText( "" );
+						srvNameLabel.setText( "-" );
 
-					mepLabel.setText( req.getMep() != null ? req.getMep().toString() : "" );
-					dateLabel.setText( date != null ? date : "" );
+					mepLabel.setText( req.getMep() != null ? req.getMep().toString() : "-" );
+					dateLabel.setText( date != null ? date : "-" );
 					propsCountLabel.setText( String.valueOf( req.getProperties() != null ? req.getProperties().size() : 0 ));
 					attCountLabel.setText( String.valueOf( req.getAttachments() != null ? req.getAttachments().size() : 0 ));
 					if( req.getOperation() != null )
 						opNameLabel.setText( req.getOperation().getLocalPart() + " - " + req.getOperation().getNamespaceURI());
 					else
-						opNameLabel.setText( "" );
+						opNameLabel.setText( "-" );
 
 				} else {
 					xmlPayloadStyledText.setText( "" );
@@ -333,10 +332,6 @@ public class HistoryTab extends Composite {
 	 */
 	@Override
 	public void dispose() {
-
-		if( this.searchImage != null && ! this.searchImage.isDisposed())
-			this.searchImage.dispose();
-
 		if( this.boldFont != null && ! this.boldFont.isDisposed())
 			this.boldFont.dispose();
 

@@ -185,10 +185,10 @@ public class RealPetalsFacade extends PetalsFacade {
         	this.clientSe.getDeliveryChannel().send( msg );
         } else {
         	boolean ok = this.clientSe.getDeliveryChannel().sendSync( msg, request.getTimeout());
-        	if( ok )
-        		this.clientSe.getJbiListener().process( msg );
-        	else
-        		this.clientSe.getUiClient().reportError( "A timeout occurred while sending a message to a Petals service.", null );
+        	//if( ok )
+        	//	this.clientSe.getJbiListener().process( msg );
+        	//else
+        	//	this.clientSe.getUiClient().reportError( "A timeout occurred while sending a message to a Petals service.", null );
         }
     }
 

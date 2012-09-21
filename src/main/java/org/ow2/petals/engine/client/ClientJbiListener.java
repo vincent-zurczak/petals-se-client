@@ -145,11 +145,11 @@ public class ClientJbiListener implements Runnable {
                 this.clientSe.getDeliveryChannel().send( msg );
 
                 // Report the change in the UI
-                this.clientSe.getUiClient().displayResponse( response );
+                // this.clientSe.getUiClient().displayResponse( response );
 
             } catch( Exception e ) {
                 this.clientSe.getLogger().log(Level.SEVERE, e.getClass() + ":" + e.getMessage());
-                this.clientSe.getUiClient().reportError( "An error occurred while processing a message response.", e );
+                // this.clientSe.getUiClient().reportError( "An error occurred while processing a message response.", e );
             }
         }
     }

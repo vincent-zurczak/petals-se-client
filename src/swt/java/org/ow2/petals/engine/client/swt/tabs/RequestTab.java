@@ -32,6 +32,7 @@ import javax.xml.namespace.QName;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.ISelection;
@@ -78,7 +79,7 @@ import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.model.Mep;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
 import org.ow2.petals.engine.client.swt.ClientApplication;
-import org.ow2.petals.engine.client.swt.SwtUtils;
+import org.ow2.petals.engine.client.swt.ImageIds;
 import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog;
 import org.ow2.petals.engine.client.swt.dialogs.ShowWsdlDialog;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
@@ -96,7 +97,6 @@ public class RequestTab extends Composite {
 	private static final String COMMENT_INVALID_WSDL = "<!-- No skeleton could be generated (invalid WSDL) -->";
 	private static final String CDATA_SECTION = "<![CDATA[<!-- Insert your mark-ups here -->]]>";
 
-	private final Image sendImg, errorImg, warningImg, infoImg;
 	private final ClientApplication clientApp;
 
 	private MessageComposite requestComposite, responseComposite;
@@ -105,7 +105,7 @@ public class RequestTab extends Composite {
 	private ProgressBar reportingProgressBar;
 	private Spinner timeoutSpinner;
 	private Text itfText, srvText, edptText;
-	private Button showWsdlButton, refreshDataButton, sendButton;
+	private Button showWsdlButton, sendButton;
 	private ComboViewer operationViewer;
 
 	private Description wsdlDescription;
@@ -121,16 +121,11 @@ public class RequestTab extends Composite {
 	 * @param clientApp
 	 */
 	public RequestTab( Composite parent, ClientApplication clientApp ) {
-
 		super( parent, SWT.NONE );
+		this.clientApp = clientApp;
+
 		setLayout( new GridLayout());
 	    setLayoutData( new GridData( GridData.FILL_BOTH ));
-
-	    this.clientApp = clientApp;
-		this.sendImg = SwtUtils.loadImage( "/send_64x64.png" );
-		this.errorImg = SwtUtils.loadImage( "/error_16x16.gif" );
-		this.warningImg = SwtUtils.loadImage( "/warning_16x16.gif" );
-		this.infoImg = SwtUtils.loadImage( "/info_16x16.gif" );
 
 		createTargetServiceSection( clientApp.getColorManager());
 		createMessageSection( clientApp.getColorManager());
@@ -160,6 +155,16 @@ public class RequestTab extends Composite {
 						msg = "The attached file '" + f.getName() + "' does not exist.";
 						break;
 					}
+				}
+			}
+
+			if( msg == null ) {
+				try {
+					Utils.buildDocument( this.requestComposite.getPayload());
+				} catch( Exception e ) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+					msg = "The request's payload is not a valid XML document.";
 				}
 			}
 		}
@@ -215,7 +220,7 @@ public class RequestTab extends Composite {
 
 	    new Label( targetGroup, SWT.NONE ).setText( "Operation Name:" );
 	    Composite lineContainer = new Composite( targetGroup, SWT.NONE );
-	    GridLayoutFactory.swtDefaults().numColumns( 4 ).margins( 0, 0 ).applyTo( lineContainer );
+	    GridLayoutFactory.swtDefaults().numColumns( 3 ).margins( 0, 0 ).applyTo( lineContainer );
 	    lineContainer.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
 
 	    this.operationViewer = new ComboViewer( new CCombo( lineContainer, SWT.BORDER | SWT.DROP_DOWN | SWT.READ_ONLY ));
@@ -268,17 +273,6 @@ public class RequestTab extends Composite {
 	    		ShowWsdlDialog.openShowWsdlDialog( getShell(), RequestTab.this.wsdlDescriptionAsString, colorManager );
 	    	}
 	    });
-
-	    this.refreshDataButton = new Button( lineContainer, SWT.PUSH );
-	    this.refreshDataButton.setEnabled( false );
-	    this.refreshDataButton.setText( "Refresh Service" );
-	    this.refreshDataButton.setToolTipText( "Resolves the service end-point and reloads the service WSDL" );
-	    this.refreshDataButton.addListener( SWT.Selection, new Listener() {
-	    	@Override
-	    	public void handleEvent( Event e ) {
-	    		resolveServiceEndpoint();
-	    	}
-	    });
 	}
 
 
@@ -296,6 +290,7 @@ public class RequestTab extends Composite {
         this.requestComposite = new MessageComposite( "Request", sashForm, this.clientApp );
         this.responseComposite = new MessageComposite( "Response", sashForm, this.clientApp );
         sashForm.setWeights( new int[] { 50, 50 });
+
 
         // Add menus items for the request part
         MenuItem menuItem = new MenuItem ( this.requestComposite.getMenu(), SWT.PUSH );
@@ -364,6 +359,7 @@ public class RequestTab extends Composite {
 			}
 		});
 
+
 		// Add menu items for the response part
 		menuItem = new MenuItem ( this.responseComposite.getMenu(), SWT.PUSH );
 		menuItem.setText( "Use as Request" );
@@ -417,11 +413,54 @@ public class RequestTab extends Composite {
 			}
 		});
 
+
 		// Validate the request when it changes
 		this.requestComposite.getStyledText().addModifyListener( new ModifyListener() {
 			@Override
 			public void modifyText( ModifyEvent e ) {
 				validate();
+			}
+		});
+
+
+		// Allow to save response attachments
+		final Menu contextMenu2 = new Menu( this.responseComposite.getAttachmentsViewer().getTable());
+		menuItem = new MenuItem ( contextMenu2, SWT.PUSH );
+		menuItem.setText( "Save as..." );
+		menuItem.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent( Event e ) {
+
+				ISelection s = RequestTab.this.responseComposite.getAttachmentsViewer().getSelection();
+				if( s.isEmpty())
+					return;
+
+				FileDialog dlg = new FileDialog( getShell(), SWT.SAVE );
+				String result = dlg.open();
+				if( result == null )
+					return;
+
+				File outputFile = new File( result );
+				File inputFile = (File) ((IStructuredSelection) s).getFirstElement();
+				try {
+					Utils.copyFile( inputFile, outputFile);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+		});
+
+		this.responseComposite.getAttachmentsViewer().getTable().addMouseListener( new MouseAdapter() {
+			@Override
+			public void mouseDown( MouseEvent e ) {
+
+				if( e.button != 3 )
+					return;
+
+				ISelection s = RequestTab.this.responseComposite.getAttachmentsViewer().getSelection();
+				if( ! s.isEmpty())
+					contextMenu.setVisible( true );
 			}
 		});
 	}
@@ -454,7 +493,7 @@ public class RequestTab extends Composite {
         GridDataFactory.swtDefaults().grab( false, true ).align( SWT.BEGINNING, SWT.FILL ).applyTo( this.sendButton );
         this.sendButton.setText( "Send  " );
         this.sendButton.setToolTipText( "Send the Request to the Target Service" );
-        this.sendButton.setImage( this.sendImg );
+        this.sendButton.setImage( JFaceResources.getImage( ImageIds.SEND_64x64 ));
         this.sendButton.setEnabled( false );
 
 
@@ -508,28 +547,6 @@ public class RequestTab extends Composite {
 				}
         	}
         });
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.eclipse.swt.widgets.Widget
-	 * #dispose()
-	 */
-	@Override
-	public void dispose() {
-		super.dispose();
-		if( this.sendImg != null && ! this.sendImg.isDisposed())
-			this.sendImg.dispose();
-
-		if( this.errorImg != null && ! this.errorImg.isDisposed())
-			this.errorImg.dispose();
-
-		if( this.warningImg != null && ! this.warningImg.isDisposed())
-			this.warningImg.dispose();
-
-		if( this.infoImg != null && ! this.infoImg.isDisposed())
-			this.infoImg.dispose();
 	}
 
 
@@ -711,7 +728,7 @@ public class RequestTab extends Composite {
 		Image img = null;
 		if( msg != null ) {
 			if( status == IStatus.INFO ) {
-				img = this.infoImg;
+				img = JFaceResources.getImage( ImageIds.INFO_16x16 );
 				color = getDisplay().getSystemColor( SWT.COLOR_BLACK );
 
 			} else if( status == IStatus.OK ) {
@@ -719,11 +736,11 @@ public class RequestTab extends Composite {
 				color = getDisplay().getSystemColor( SWT.COLOR_BLACK );
 
 			} else if( status == IStatus.WARNING ) {
-				img = this.warningImg;
+				img = JFaceResources.getImage( ImageIds.WARNING_16x16 );
 				color = this.clientApp.getColorManager().getOrangeColor();
 
 			} else if( status == IStatus.ERROR ) {
-				img = this.errorImg;
+				img = JFaceResources.getImage( ImageIds.ERROR_16x16 );
 				color = getDisplay().getSystemColor( SWT.COLOR_RED );
 			}
 		}

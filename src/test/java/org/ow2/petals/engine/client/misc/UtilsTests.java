@@ -49,7 +49,6 @@ import org.ow2.easywsdl.wsdl.WSDLFactory;
 import org.ow2.easywsdl.wsdl.api.Description;
 import org.ow2.easywsdl.wsdl.api.Types;
 import org.ow2.easywsdl.wsdl.api.WSDLReader;
-import org.ow2.petals.engine.client.TestUtils;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -136,12 +135,12 @@ public class UtilsTests {
             schemaFiles = storeWsdlSchemas( desc.getTypes());
 
             String xml = Utils.generateXmlSkeleton( desc, interfaceName, operationName, false );
-            Document doc = TestUtils.buildDocument( xml );
+            Document doc = Utils.buildDocument( xml );
             if( ! isValidAgainstXmlSchemas( schemaFiles, doc ))
                 throw new Exception( "The generated XML document could not be validated against the XML schemas (mandatory elements only)." );
 
             xml = Utils.generateXmlSkeleton( desc, interfaceName, operationName, true );
-            doc = TestUtils.buildDocument( xml );
+            doc = Utils.buildDocument( xml );
             if( ! isValidAgainstXmlSchemas( schemaFiles, doc ))
                 throw new Exception( "The generated XML document could not be validated against the XML schemas (optional elements too)." );
 

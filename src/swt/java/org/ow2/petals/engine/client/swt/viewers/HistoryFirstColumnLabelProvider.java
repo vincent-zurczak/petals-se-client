@@ -61,7 +61,7 @@ public class HistoryFirstColumnLabelProvider extends ColumnLabelProvider {
 
 		String result = "";
 		if( o instanceof Long && this.type == 0  ) {
-			result = formatDateStr((Long) o);
+			result = formatDateStr((Long) o, false );
 
 		} else if( o instanceof File ) {
 			String name = ((File) o).getName();
@@ -85,7 +85,7 @@ public class HistoryFirstColumnLabelProvider extends ColumnLabelProvider {
 				}
 
 			} else if( this.type == 2 ) {
-				int index = result.indexOf( "==e=" );
+				int index = name.indexOf( "==e=" );
 				if( index > 0 )
 					result = name.substring( index + 4 );
 			}
@@ -113,7 +113,7 @@ public class HistoryFirstColumnLabelProvider extends ColumnLabelProvider {
 	 * @param dateInMilliSeconds the date, in milliseconds
 	 * @return the formatted date, as a string
 	 */
-	private String formatDateStr( Long dateInMilliSeconds ) {
+	public static String formatDateStr( Long dateInMilliSeconds, boolean addHour ) {
 
 		GregorianCalendar calendar = new GregorianCalendar();
 		calendar.setTimeInMillis( dateInMilliSeconds );
@@ -137,6 +137,10 @@ public class HistoryFirstColumnLabelProvider extends ColumnLabelProvider {
 		    	break;
 		}
 
-		return new SimpleDateFormat( "MMMM, EEEE d" + suffix + " yyyy", Locale.ENGLISH ).format( calendar.getTime());
+		String format =  "EEEE MMMM d" + suffix + ", yyyy";
+		if( addHour )
+			format += " 'at' HH:mm:ss";
+
+		return new SimpleDateFormat( format, Locale.ENGLISH ).format( calendar.getTime());
     }
 }

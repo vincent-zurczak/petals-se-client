@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnWeightData;
 import org.eclipse.jface.viewers.ISelection;
@@ -39,7 +40,6 @@ import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
@@ -56,6 +56,7 @@ import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.swt.widgets.ToolItem;
 import org.ow2.petals.engine.client.model.BasicMessageBean;
 import org.ow2.petals.engine.client.swt.ClientApplication;
+import org.ow2.petals.engine.client.swt.ImageIds;
 import org.ow2.petals.engine.client.swt.SwtUtils;
 import org.ow2.petals.engine.client.swt.dialogs.KeyValueDialog;
 import org.ow2.petals.engine.client.swt.viewers.FilesLabelProvider;
@@ -68,14 +69,11 @@ import org.ow2.petals.engine.client.swt.viewers.MessagePropertiesLabelProvider;
  */
 public class MessageComposite extends SashForm {
 
-	private final FilesLabelProvider filesLabelProvider;
-	private final Image viewMenuImg;
-	private final ClientApplication clientApp;
-
 	private Menu menu;
 	private TableViewer propertiesViewer, attachmentsViewer;
 	private StyledText styledText;
 
+	private final ClientApplication clientApp;
 	private final Map<String,String> properties = new LinkedHashMap<String,String> ();
 	private final Set<File> attachments = new LinkedHashSet<File> ();
 	private final String title;
@@ -92,8 +90,6 @@ public class MessageComposite extends SashForm {
 		setLayoutData( new GridData( GridData.FILL_BOTH ));
 		setSashWidth( 10 );
 
-		this.viewMenuImg = SwtUtils.loadImage( "/view_menu_16x16.gif" );
-		this.filesLabelProvider = new FilesLabelProvider();
 		this.clientApp = clientApp;
 		this.title = title;
 
@@ -102,21 +98,6 @@ public class MessageComposite extends SashForm {
 		createAttachmentsSection();
 
 		setWeights( new int[] { 70, 15, 15 });
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.eclipse.swt.widgets.Widget
-	 * #dispose()
-	 */
-	@Override
-	public void dispose() {
-		super.dispose();
-
-		this.filesLabelProvider.dispose();
-		if( this.viewMenuImg != null && ! this.viewMenuImg.isDisposed())
-			this.viewMenuImg.dispose();
 	}
 
 
@@ -134,6 +115,14 @@ public class MessageComposite extends SashForm {
 	 */
 	public StyledText getStyledText() {
 		return this.styledText;
+	}
+
+
+	/**
+	 * @return the attachmentsViewer
+	 */
+	public TableViewer getAttachmentsViewer() {
+		return this.attachmentsViewer;
 	}
 
 
@@ -217,7 +206,7 @@ public class MessageComposite extends SashForm {
 		// Link the menu and the tool-bar
 		this.menu = new Menu( getShell(), SWT.POP_UP);
 		final ToolItem item = new ToolItem( toolBar, SWT.FLAT );
-		item.setImage( this.viewMenuImg );
+		item.setImage( JFaceResources.getImage( ImageIds.VIEW_MENU_16x16 ));
 		item.addListener( SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event e) {
@@ -298,7 +287,7 @@ public class MessageComposite extends SashForm {
 		// Link the menu and the tool-bar
 		final Menu localMenu = new Menu( getShell(), SWT.POP_UP);
 		final ToolItem item = new ToolItem( toolBar, SWT.FLAT );
-		item.setImage( this.viewMenuImg );
+		item.setImage( JFaceResources.getImage( ImageIds.VIEW_MENU_16x16 ));
 		item.addListener( SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event e) {
@@ -391,7 +380,7 @@ public class MessageComposite extends SashForm {
 		// Link the menu and the tool-bar
 		final Menu localMenu = new Menu( getShell(), SWT.POP_UP);
 		final ToolItem item = new ToolItem( toolBar, SWT.FLAT );
-		item.setImage( this.viewMenuImg );
+		item.setImage( JFaceResources.getImage( ImageIds.VIEW_MENU_16x16 ));
 		item.addListener( SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent(Event e) {
@@ -451,7 +440,7 @@ public class MessageComposite extends SashForm {
 
 		TableViewer viewer = new TableViewer( parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER );
 		viewer.setContentProvider( ArrayContentProvider.getInstance());
-		viewer.setLabelProvider( this.filesLabelProvider );
+		viewer.setLabelProvider( new FilesLabelProvider());
 
 	    TableLayout layout = new TableLayout();
 	    layout.addColumnData( new ColumnWeightData( 50, 75, true ));

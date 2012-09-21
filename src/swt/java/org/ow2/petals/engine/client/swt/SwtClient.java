@@ -20,9 +20,13 @@
 
 package org.ow2.petals.engine.client.swt;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Logger;
 
-import org.ow2.petals.engine.client.model.ResponseMessageBean;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jface.dialogs.ProgressMonitorDialog;
+import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.swt.widgets.Shell;
 import org.ow2.petals.engine.client.ui.IClientUI;
 import org.ow2.petals.engine.client.ui.PetalsFacade;
 
@@ -32,7 +36,9 @@ import org.ow2.petals.engine.client.ui.PetalsFacade;
  */
 public class SwtClient implements IClientUI {
 
-    PetalsFacade petalsFacade;
+    private PetalsFacade petalsFacade;
+    private ClientApplication clientApp;
+    private Logger logger;
 
 
     /* (non-Javadoc)
@@ -41,8 +47,9 @@ public class SwtClient implements IClientUI {
      */
     @Override
     public void open() {
-        // TODO Auto-generated method stub
-
+        this.clientApp = new ClientApplication( this );
+        this.clientApp.setBlockOnOpen( true );
+        this.clientApp.open();
     }
 
     /* (non-Javadoc)
@@ -51,58 +58,7 @@ public class SwtClient implements IClientUI {
      */
     @Override
     public void close() {
-        // TODO Auto-generated method stub
-
-    }
-
-    /* (non-Javadoc)
-     * @see org.ow2.petals.engine.client.ui.IClientUI
-     * #hide()
-     */
-    @Override
-    public void hide() {
-        // TODO Auto-generated method stub
-
-    }
-
-    /* (non-Javadoc)
-     * @see org.ow2.petals.engine.client.ui.IClientUI
-     * #show()
-     */
-    @Override
-    public void show() {
-        // TODO Auto-generated method stub
-
-    }
-
-    /* (non-Javadoc)
-     * @see org.ow2.petals.engine.client.ui.IClientUI
-     * #reportError(java.lang.String, java.lang.Throwable)
-     */
-    @Override
-    public void reportError( String msg, Throwable t ) {
-        // TODO Auto-generated method stub
-
-    }
-
-    /* (non-Javadoc)
-     * @see org.ow2.petals.engine.client.ui.IClientUI
-     * #displayResponse(org.ow2.petals.engine.client.model.ResponseMessageBean)
-     */
-    @Override
-    public void displayResponse( ResponseMessageBean response ) {
-        // TODO Auto-generated method stub
-
-    }
-
-    /* (non-Javadoc)
-     * @see org.ow2.petals.engine.client.ui.IClientUI
-     * #clearDisplayedResponse()
-     */
-    @Override
-    public void clearDisplayedResponse() {
-        // TODO Auto-generated method stub
-
+    	this.clientApp.close();
     }
 
     /* (non-Javadoc)
@@ -114,14 +70,35 @@ public class SwtClient implements IClientUI {
         this.petalsFacade = petalsFacade;
     }
 
-    /*
+	/*
      * (non-Javadoc)
      * @see org.ow2.petals.engine.client.ui.IClientUI
      * #setPetalsLogger(java.util.logging.Logger)
      */
 	@Override
-	public void setPetalsLogger(Logger logger) {
-		// TODO Auto-generated method stub
+	public void setPetalsLogger( Logger logger ) {
+		this.logger = logger;
+	}
+
+    /**
+	 * @return the petalsFacade
+	 */
+	public PetalsFacade getPetalsFacade() {
+		return this.petalsFacade;
+	}
+
+	/**
+	 * @return the clientApp
+	 */
+	public ClientApplication getClientApp() {
+		return this.clientApp;
+	}
+
+	/**
+	 * @return the logger
+	 */
+	public Logger getLogger() {
+		return this.logger;
 	}
 
 	/**
@@ -129,5 +106,35 @@ public class SwtClient implements IClientUI {
 	 */
 	public void restartUserInterface() {
 
+		IRunnableWithProgress runnable = new IRunnableWithProgress() {
+			@Override
+			public void run( IProgressMonitor monitor )
+			throws InvocationTargetException, InterruptedException {
+
+				try {
+					monitor.beginTask( "Restarting the user interface...", 3 );
+					monitor.worked( 2 );
+					Thread.sleep( 1000 );
+					monitor.worked( 1 );
+
+				} finally {
+					monitor.done();
+				}
+			}
+		};
+
+		ProgressMonitorDialog dlg = new ProgressMonitorDialog( new Shell());
+		try {
+			dlg.run( false, false, runnable );
+			open();
+
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

@@ -23,6 +23,7 @@ package org.ow2.petals.engine.client.swt.dialogs;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
@@ -33,7 +34,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.swt.widgets.Shell;
-import org.ow2.petals.engine.client.swt.SwtUtils;
+import org.ow2.petals.engine.client.swt.ImageIds;
 
 /**
  * A dialog that gives information about this component.
@@ -50,7 +51,7 @@ public class AboutDialog extends Dialog {
 	 */
 	public AboutDialog( Shell parentShell ) {
 		super( parentShell );
-		this.petalsImg = SwtUtils.loadImage( "/petals_splash.png" );
+		this.petalsImg = JFaceResources.getImage( ImageIds.PETALS_SPLASH );
 	}
 
 

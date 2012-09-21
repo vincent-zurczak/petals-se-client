@@ -20,13 +20,13 @@
 
 package org.ow2.petals.engine.client.swt;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.SWT;
@@ -35,11 +35,8 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.FontData;
-import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.Utils;
@@ -52,39 +49,6 @@ import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegionAnalyzer;
  * @author Vincent Zurczak - Linagora
  */
 public class SwtUtils {
-
-	/**
-	 * Loads an image from the resources.
-	 * @param relativePath the relative path of the image (class loader search)
-	 * @return an image, or null if it could not be created
-	 */
-	public static Image loadImage( String relativePath ) {
-
-		Image result = null;
-		InputStream in = null;
-		try {
-			in = SwtUtils.class.getResourceAsStream( relativePath );
-			if( in == null )
-				throw new NullPointerException( "No image could be found at " + relativePath );
-
-			ImageData imgData = new ImageData( in );
-			result = new Image( Display.getDefault(), imgData );
-
-		} catch( Exception e ) {
-			e.printStackTrace();
-
-		} finally {
-			try {
-				if( in != null )
-					in.close();
-			} catch( IOException e ) {
-				// nothing
-			}
-		}
-
-		return result;
-	}
-
 
 	/**
 	 * Computes style ranges from XML regions.
@@ -168,8 +132,10 @@ public class SwtUtils {
 	 * Clears the history and shows a progress bar.
 	 * @param shell the parent shell
 	 * @param olderThan see {@link Utils#clearHistory(int)}
+	 * @param clientApp the client application
+	 * @throws Exception
 	 */
-	public static void clearHistoryWithProgressBar( Shell shell, final int olderThan ) {
+	public static void clearHistoryWithProgressBar( Shell shell, final int olderThan, ClientApplication clientApp ) {
 
 		IRunnableWithProgress runnable = new IRunnableWithProgress() {
 			@Override
@@ -191,8 +157,12 @@ public class SwtUtils {
 		try {
 			dlg.run( true, false, runnable );
 
-		} catch( Exception e ) {
-			// TODO
+		} catch( InvocationTargetException e ) {
+			clientApp.log( null, e, Level.INFO );
+			openErrorDialog( shell, "The history could not be cleared correctly." );
+
+		} catch( InterruptedException e ) {
+			// nothing
 		}
 	}
 
@@ -211,5 +181,15 @@ public class SwtUtils {
 		}
 
 		return styleData;
+	}
+
+
+	/**
+	 * Opens an error dialog.
+	 * @param shell
+	 * @param msg the message to display (not null)
+	 */
+	public static void openErrorDialog( Shell shell, String msg ) {
+		MessageDialog.openError( shell, "Error", msg + "\nPlease, check the logs for more details." );
 	}
 }

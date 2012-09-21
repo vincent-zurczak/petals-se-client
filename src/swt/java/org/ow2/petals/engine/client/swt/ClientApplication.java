@@ -20,6 +20,9 @@
 
 package org.ow2.petals.engine.client.swt;
 
+import java.util.logging.Level;
+
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.window.ApplicationWindow;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
@@ -32,8 +35,10 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
+import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.swt.dialogs.AboutDialog;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.tabs.HistoryTab;
@@ -47,13 +52,11 @@ import org.ow2.petals.engine.client.ui.PetalsFacade;
  */
 public class ClientApplication extends ApplicationWindow {
 
-	private final Image appli16, appli32, appli48;
-	private final PetalsFacade petalsFacade;
 	private final ColorCacheManager colorManager;
+	private final SwtClient swtClient;
 
 	private HistoryTab historyTab;
 	private RequestTab requestTab;
-	private SwtClient swtClient;
 
 
 
@@ -61,36 +64,33 @@ public class ClientApplication extends ApplicationWindow {
 	 * Constructor.
 	 * @param petalsFacade
 	 */
-	public ClientApplication( PetalsFacade petalsFacade ) {
+	public ClientApplication( SwtClient swtClient ) {
 		super( null );
-		this.petalsFacade = petalsFacade;
+		this.swtClient = swtClient;
 		this.colorManager = new ColorCacheManager();
-
-		this.appli16 = SwtUtils.loadImage( "/petals_16x16.png" );
-		this.appli32 = SwtUtils.loadImage( "/petals_32x32.png" );
-		this.appli48 = SwtUtils.loadImage( "/petals_48x48.png" );
+		ImageIds.loadImageInJFaceResources( this );
 	}
 
 
 	/*
-	 * (non-Jsdoc)
-	 * @see org.eclipse.jface.dialogs.TrayDialog
-	 * #close()
+	 * (non-Javadoc)
+	 * @see org.eclipse.jface.window.ApplicationWindow
+	 * #configureShell(org.eclipse.swt.widgets.Shell)
 	 */
 	@Override
-	public boolean close() {
-		boolean result = super.close();
+	protected void configureShell( Shell shell ) {
+		super.configureShell( shell );
 
-		if( this.appli16 != null && ! this.appli16.isDisposed())
-			this.appli16.dispose();
+		// Shell properties
+		shell.setText( "Petals Client" );
+		shell.setBounds( Display.getCurrent().getBounds());
+		shell.setImages( new Image[] {
+				JFaceResources.getImage( ImageIds.PETALS_16x16 ),
+				JFaceResources.getImage( ImageIds.PETALS_32x32 ),
+				JFaceResources.getImage( ImageIds.PETALS_48x48 )});
 
-		if( this.appli32 != null && ! this.appli32.isDisposed())
-			this.appli32.dispose();
-
-		if( this.appli48 != null && ! this.appli48.isDisposed())
-			this.appli48.dispose();
-
-		return result;
+		// Add tray support
+		// TODO:
 	}
 
 
@@ -101,12 +101,6 @@ public class ClientApplication extends ApplicationWindow {
 	 */
 	@Override
 	protected Control createContents( Composite parent ) {
-
-		// Shell properties
-		getShell().setText( "Petals Client" );
-		getShell().setBounds( Display.getCurrent().getBounds());
-		getShell().setMaximized( true );
-		getShell().setImages( new Image[] { this.appli16, this.appli32, this.appli48 });
 
 		// Create the container
 		Composite container = new Composite( parent, SWT.NONE );
@@ -149,7 +143,7 @@ public class ClientApplication extends ApplicationWindow {
 	 * @return the petalsFacade
 	 */
 	public PetalsFacade getPetalsFacade() {
-		return this.petalsFacade;
+		return this.swtClient.getPetalsFacade();
 	}
 
 
@@ -179,11 +173,25 @@ public class ClientApplication extends ApplicationWindow {
 	}
 
 
-    /**
-	 * @param swtClient the swtClient to set
+	/**
+	 * Logs an information.
+	 * @param msg a message (can be null)
+	 * @param t a throwable (can be null)
+	 * <p>
+	 * The stack trace is logged with the FINEST level.
+	 * </p>
+	 *
+	 * @param level the log level for the message
 	 */
-	public void setSwtClient( SwtClient swtClient ) {
-		this.swtClient = swtClient;
+	public void log( String msg, Throwable t, Level level ) {
+
+		if( this.swtClient.getLogger() != null ) {
+			String realMsg = msg != null ? msg : t.getMessage() != null ? t.getMessage() : "An error occurred.";
+			this.swtClient.getLogger().log( level, realMsg );
+
+			if( t != null && this.swtClient.getLogger().isLoggable( Level.FINEST ))
+				this.swtClient.getLogger().log( Level.FINEST, Utils.extractStackTrace( t ));
+		}
 	}
 
 
@@ -219,8 +227,10 @@ public class ClientApplication extends ApplicationWindow {
 		item.addListener( SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent( Event e ) {
-				if( ClientApplication.this.swtClient != null )
+				if( ClientApplication.this.swtClient != null ) {
+					close();
 					ClientApplication.this.swtClient.restartUserInterface();
+				}
 			}
 		});
 

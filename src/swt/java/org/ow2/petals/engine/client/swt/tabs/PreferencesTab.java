@@ -86,7 +86,6 @@ public class PreferencesTab extends Composite {
 
 		// History
 		Composite historyGroup = createSection( "History", 4, false );
-
 		Label l = new Label( historyGroup, SWT.NONE );
 		l.setText( "History Directory:" );
 		l.setToolTipText( "The directory in which old requests are stored" );
@@ -133,7 +132,7 @@ public class PreferencesTab extends Composite {
 		link.addListener( SWT.Selection, new Listener() {
 			@Override
 			public void handleEvent( Event e ) {
-				SwtUtils.clearHistoryWithProgressBar( getShell(), -1 );
+				SwtUtils.clearHistoryWithProgressBar( getShell(), -1, clientApp );
 			}
 		});
 
@@ -146,7 +145,7 @@ public class PreferencesTab extends Composite {
 			public void handleEvent( Event e ) {
 				ClearHistoryDialog dlg = new ClearHistoryDialog( getShell());
 				if( dlg.open() == Window.OK ) {
-					SwtUtils.clearHistoryWithProgressBar( getShell(), dlg.getDays());
+					SwtUtils.clearHistoryWithProgressBar( getShell(), dlg.getDays(), clientApp );
 					clientApp.refreshHistory();
 				}
 			}
@@ -172,7 +171,7 @@ public class PreferencesTab extends Composite {
 				MessageDialog.openInformation(
 						getShell(), "Restart",
 						"The user interface needs to be restarted to take this preference into account.\n"
-						+ "Save your work and then go into \"Help > Restart User Interface\"." );
+						+ "Save your work and then go into \"File > Restart the User Interface\"." );
 			}
 		});
 
@@ -282,7 +281,6 @@ public class PreferencesTab extends Composite {
 				Button b = (Button) e.widget;
 				String name = (String) b.getData();
 				PreferencesManager.INSTANCE.saveXmlRegionStyle( xr, name, b.getSelection());
-
 				previewStyledText.notifyListeners( SWT.Modify, new Event());
 			}
 		};
