@@ -38,7 +38,6 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
-import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.swt.dialogs.AboutDialog;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.tabs.HistoryTab;
@@ -184,14 +183,7 @@ public class ClientApplication extends ApplicationWindow {
 	 * @param level the log level for the message
 	 */
 	public void log( String msg, Throwable t, Level level ) {
-
-		if( this.swtClient.getLogger() != null ) {
-			String realMsg = msg != null ? msg : t.getMessage() != null ? t.getMessage() : "An error occurred.";
-			this.swtClient.getLogger().log( level, realMsg );
-
-			if( t != null && this.swtClient.getLogger().isLoggable( Level.FINEST ))
-				this.swtClient.getLogger().log( Level.FINEST, Utils.extractStackTrace( t ));
-		}
+		this.swtClient.log( msg, t, level );
 	}
 
 

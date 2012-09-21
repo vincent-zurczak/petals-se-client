@@ -687,7 +687,7 @@ public class XmlRegionAnalyzerTests {
 			}
 
 		} catch( Exception e ) {
-			// TODO
+			e.printStackTrace();
 
 		} finally {
 

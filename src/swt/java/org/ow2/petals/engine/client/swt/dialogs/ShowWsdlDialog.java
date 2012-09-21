@@ -22,6 +22,7 @@ package org.ow2.petals.engine.client.swt.dialogs;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.logging.Level;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.dialogs.Dialog;
@@ -39,8 +40,8 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.ow2.petals.engine.client.swt.ClientApplication;
 import org.ow2.petals.engine.client.swt.SwtUtils;
-import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegion;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.XmlRegionAnalyzer;
 
@@ -142,9 +143,9 @@ public class ShowWsdlDialog extends Dialog {
 	 * A convenience method to display both a progress dialog and then the WSDL dialog.
 	 * @param shell
 	 * @param xmlText
-	 * @param colorManager
+	 * @param clientApp
 	 */
-	public static void openShowWsdlDialog( Shell shell, final String xmlText, final ColorCacheManager colorManager ) {
+	public static void openShowWsdlDialog( Shell shell, final String xmlText, final ClientApplication clientApp ) {
 
 		final Object[] array = new Object[ 1 ];
 		IRunnableWithProgress runnable = new IRunnableWithProgress() {
@@ -155,7 +156,7 @@ public class ShowWsdlDialog extends Dialog {
 				try {
 					monitor.beginTask( "Formatting the WSDL...", IProgressMonitor.UNKNOWN );
 					List<XmlRegion> regions = new XmlRegionAnalyzer().analyzeXml( xmlText );
-					StyleRange[] styleRanges = SwtUtils.computeStyleRanges( regions, colorManager );
+					StyleRange[] styleRanges = SwtUtils.computeStyleRanges( regions, clientApp.getColorManager());
 					array[ 0 ] = styleRanges;
 
 				} finally {
@@ -169,13 +170,12 @@ public class ShowWsdlDialog extends Dialog {
 			StyleRange[] styleRanges = (StyleRange[]) array[ 0 ];
 			new ShowWsdlDialog( shell, xmlText, styleRanges ).open();
 
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch( InvocationTargetException e ) {
+			clientApp.log( "Faild to display the WSDL.", e, Level.WARNING );
+			SwtUtils.openErrorDialog( shell, "The WSDL could not be displayed." );
 
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch( InterruptedException e ) {
+			// nothing
 		}
 	}
 }

@@ -82,7 +82,6 @@ import org.ow2.petals.engine.client.swt.ClientApplication;
 import org.ow2.petals.engine.client.swt.ImageIds;
 import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog;
 import org.ow2.petals.engine.client.swt.dialogs.ShowWsdlDialog;
-import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.ui.PetalsFacade;
 import org.w3c.dom.Document;
 
@@ -127,8 +126,8 @@ public class RequestTab extends Composite {
 		setLayout( new GridLayout());
 	    setLayoutData( new GridData( GridData.FILL_BOTH ));
 
-		createTargetServiceSection( clientApp.getColorManager());
-		createMessageSection( clientApp.getColorManager());
+		createTargetServiceSection();
+		createMessageSection();
 		createToolSection();
     }
 
@@ -186,9 +185,8 @@ public class RequestTab extends Composite {
 
 	/**
 	 * Creates the section for the target service.
-	 * @param colorManager
 	 */
-	private void createTargetServiceSection( final ColorCacheManager colorManager ) {
+	private void createTargetServiceSection() {
 
 		Group targetGroup = new Group( this, SWT.SHADOW_ETCHED_OUT );
 	    targetGroup.setLayout( new GridLayout( 2, false ));
@@ -270,7 +268,7 @@ public class RequestTab extends Composite {
 	    this.showWsdlButton.addListener( SWT.Selection, new Listener() {
 	    	@Override
 	    	public void handleEvent( Event e ) {
-	    		ShowWsdlDialog.openShowWsdlDialog( getShell(), RequestTab.this.wsdlDescriptionAsString, colorManager );
+	    		ShowWsdlDialog.openShowWsdlDialog( getShell(), RequestTab.this.wsdlDescriptionAsString, RequestTab.this.clientApp );
 	    	}
 	    });
 	}
@@ -278,9 +276,8 @@ public class RequestTab extends Composite {
 
 	/**
 	 * Creates the section with the message parts.
-	 * @param colorManager
 	 */
-	private void createMessageSection( ColorCacheManager colorManager ) {
+	private void createMessageSection() {
 
 		// The basics...
 		SashForm sashForm = new SashForm( this, SWT.HORIZONTAL );

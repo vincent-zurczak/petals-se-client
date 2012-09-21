@@ -21,12 +21,14 @@
 package org.ow2.petals.engine.client.swt;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
 import org.eclipse.swt.widgets.Shell;
+import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.ui.IClientUI;
 import org.ow2.petals.engine.client.ui.PetalsFacade;
 
@@ -52,6 +54,7 @@ public class SwtClient implements IClientUI {
         this.clientApp.open();
     }
 
+
     /* (non-Javadoc)
      * @see org.ow2.petals.engine.client.ui.IClientUI
      * #close()
@@ -61,6 +64,7 @@ public class SwtClient implements IClientUI {
     	this.clientApp.close();
     }
 
+
     /* (non-Javadoc)
      * @see org.ow2.petals.engine.client.ui.IClientUI
      * #setPetalsFacade(org.ow2.petals.engine.client.ui.IPetalsFacade)
@@ -69,6 +73,7 @@ public class SwtClient implements IClientUI {
     public void setPetalsFacade( PetalsFacade petalsFacade ) {
         this.petalsFacade = petalsFacade;
     }
+
 
 	/*
      * (non-Javadoc)
@@ -80,12 +85,14 @@ public class SwtClient implements IClientUI {
 		this.logger = logger;
 	}
 
+
     /**
 	 * @return the petalsFacade
 	 */
 	public PetalsFacade getPetalsFacade() {
 		return this.petalsFacade;
 	}
+
 
 	/**
 	 * @return the clientApp
@@ -94,12 +101,14 @@ public class SwtClient implements IClientUI {
 		return this.clientApp;
 	}
 
+
 	/**
 	 * @return the logger
 	 */
 	public Logger getLogger() {
 		return this.logger;
 	}
+
 
 	/**
 	 * Restarts the user interface (e.g. to take new preferences into account).
@@ -128,13 +137,33 @@ public class SwtClient implements IClientUI {
 			dlg.run( false, false, runnable );
 			open();
 
-		} catch (InvocationTargetException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch( InvocationTargetException e ) {
+			log( "Failed to restart the UI.", e, Level.WARNING );
 
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		} catch( InterruptedException e ) {
+			// nothing
+		}
+	}
+
+
+	/**
+	 * Logs an information.
+	 * @param msg a message (can be null)
+	 * @param t a throwable (can be null)
+	 * <p>
+	 * The stack trace is logged with the FINEST level.
+	 * </p>
+	 *
+	 * @param level the log level for the message
+	 */
+	public void log( String msg, Throwable t, Level level ) {
+
+		if( this.logger != null ) {
+			String realMsg = msg != null ? msg : t.getMessage() != null ? t.getMessage() : "An error occurred.";
+			this.logger.log( level, realMsg );
+
+			if( t != null && this.logger.isLoggable( Level.FINEST ))
+				this.logger.log( Level.FINEST, Utils.extractStackTrace( t ));
 		}
 	}
 }
