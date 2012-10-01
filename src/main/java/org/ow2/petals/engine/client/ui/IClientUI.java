@@ -22,6 +22,8 @@ package org.ow2.petals.engine.client.ui;
 
 import java.util.logging.Logger;
 
+import org.ow2.petals.engine.client.model.ResponseMessageBean;
+
 /**
  * An interface that can be used to interact with a user interface.
  * @author Vincent Zurczak - Linagora
@@ -30,11 +32,13 @@ public interface IClientUI {
 
     /**
      * Shows a shell with a user interface.
+     * <p><b>This method is always invoked from a non-UI thread.</b></p>
      */
     void open();
 
     /**
      * Closes the user interface.
+     * <p><b>This method is always invoked from a non-UI thread.</b></p>
      */
     void close();
 
@@ -49,4 +53,20 @@ public interface IClientUI {
      * @param logger the logger (not null)
      */
     void setPetalsLogger( Logger logger );
+
+    /**
+     * Reports a communication problem through the user interface.
+     * <p><b>This method is always invoked from a non-UI thread.</b></p>
+     * <p>The reported problem is logged before this method is invoked.</p>
+     *
+     * @param e the exception reporting the problem
+     */
+    void reportCommunicationProblem( Exception e );
+
+    /**
+     * Displays the response to a request in the user interface.
+     * <p><b>This method is always invoked from a non-UI thread.</b></p>
+     * @param response the response (not null)
+     */
+    void displayResponse( ResponseMessageBean response );
 }

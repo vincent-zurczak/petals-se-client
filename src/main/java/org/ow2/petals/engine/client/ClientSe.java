@@ -34,6 +34,7 @@ import javax.jbi.servicedesc.ServiceEndpoint;
 import javax.management.ObjectName;
 
 import org.ow2.petals.engine.client.misc.RealPetalsFacade;
+import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.swt.SwtClient;
 import org.ow2.petals.engine.client.ui.IClientUI;
 import org.w3c.dom.Document;
@@ -80,7 +81,7 @@ public class ClientSe implements Component, ComponentLifeCycle {
 		this.uiClient = new SwtClient();
 		this.uiClient.setPetalsFacade( new RealPetalsFacade( this ));
 
-		this.logger.log(Level.INFO, "init");
+		this.logger.log(Level.INFO, "Initializing the Client component...");
 	}
 
 
@@ -92,7 +93,7 @@ public class ClientSe implements Component, ComponentLifeCycle {
     public void start() throws JBIException {
 
 	    // Log
-	    this.logger.log(Level.INFO, "start");
+	    this.logger.log(Level.INFO, "Starting the Client component...");
 
 	    // Start to listen messages
 		Thread listenerThread = new Thread( this.listener, this.context.getComponentName() + "-JBI listener thread" );
@@ -111,13 +112,14 @@ public class ClientSe implements Component, ComponentLifeCycle {
     public void stop() throws JBIException {
 
 	    // Log
-		this.logger.log(Level.INFO, "stop");
+		this.logger.log(Level.INFO, "Stopping the Client component...");
 
 		// Stop accepting messages
 		this.listener.stopProcessing();
 
 		// Close the UI
 		this.uiClient.close();
+		this.logger.log(Level.INFO, "The Client component is now stopped.");
 	}
 
 	/*
@@ -128,7 +130,7 @@ public class ClientSe implements Component, ComponentLifeCycle {
     public void shutDown() throws JBIException {
 
 	    // Log
-		this.logger.log(Level.INFO, "shutDown");
+		this.logger.log(Level.INFO, "Shutdowning the Client component...");
 
 		// Close the channel
 		this.channel.close();
@@ -184,8 +186,8 @@ public class ClientSe implements Component, ComponentLifeCycle {
 	 * #isExchangeWithProviderOkay(javax.jbi.servicedesc.ServiceEndpoint, javax.jbi.messaging.MessageExchange)
 	 */
 	@Override
-    public boolean isExchangeWithProviderOkay(ServiceEndpoint arg0, MessageExchange arg1) {
-		this.logger.log(Level.INFO, "ClientSe accept the exchange");
+    public boolean isExchangeWithProviderOkay(ServiceEndpoint edpt, MessageExchange me) {
+		this.logger.log(Level.INFO, "The Client component is accepting an exchange.");
 		return true;
 	}
 
@@ -250,4 +252,26 @@ public class ClientSe implements Component, ComponentLifeCycle {
     public ClientJbiListener getJbiListener() {
         return this.listener;
     }
+
+
+    /**
+	 * Logs an information.
+	 * @param msg a message (can be null)
+	 * @param t a throwable (can be null)
+	 * <p>
+	 * The stack trace is logged with the FINEST level.
+	 * </p>
+	 *
+	 * @param level the log level for the message
+	 */
+	public void log( String msg, Throwable t, Level level ) {
+
+		if( this.logger != null ) {
+			String realMsg = msg != null ? msg : t.getMessage() != null ? t.getMessage() : "An error occurred.";
+			this.logger.log( level, realMsg );
+
+			if( t != null && this.logger.isLoggable( Level.FINEST ))
+				this.logger.log( Level.FINEST, Utils.extractStackTrace( t ));
+		}
+	}
 }

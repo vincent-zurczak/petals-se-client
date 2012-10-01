@@ -21,12 +21,16 @@
 package org.ow2.petals.engine.client;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
+import javax.activation.DataHandler;
 import javax.jbi.messaging.ExchangeStatus;
 import javax.jbi.messaging.MessageExchange;
 import javax.jbi.messaging.MessagingException;
@@ -73,19 +77,8 @@ public class ClientJbiListener implements Runnable {
                     process( msg );
 
             } catch( MessagingException e ) {
-
-                // TODO: get something better here
-                Throwable cause = e;
-                while( cause != null ) {
-                    this.clientSe.getLogger().info("Exception when accepting messages :" + cause.getClass().getName() + " " + cause.getMessage());
-                    cause = cause.getCause();
-                    if( cause instanceof InterruptedException ) {
-                        this.clientSe.getLogger().severe("Thread interrupted, stop listening.");
-                        this.running = false;
-                    }
-                }
-
-                this.clientSe.getLogger().severe(e.getMessage());
+            	Utils.log( "Error while receiving a response in Petals.", e, Level.SEVERE, this.clientSe.getLogger());
+            	this.clientSe.getUiClient().reportCommunicationProblem( e );
             }
         }
 
@@ -97,16 +90,17 @@ public class ClientJbiListener implements Runnable {
      */
     public void process( MessageExchange msg ) {
 
-        this.clientSe.getLogger().log(Level.INFO, "Processing received message " + msg.getExchangeId());
+        this.clientSe.getLogger().log(Level.FINE, "The Client message is processing " + msg.getExchangeId());
 
+        // Check the exchange
         ResponseMessageBean response = new ResponseMessageBean();
         if( ExchangeStatus.DONE.equals( msg.getStatus())) {
             response.setNature( ResponseNature.ACK );
-            response.setXmlPayload( "DONE Acknowledgment." );
+            response.setXmlPayload( "DONE Acknowledgment (status)." );
 
         } else if( ExchangeStatus.ERROR.equals( msg.getStatus())) {
             response.setNature( ResponseNature.ACK );
-            response.setXmlPayload( "ERROR Acknowledgment (status" );
+            response.setXmlPayload( "ERROR Acknowledgment (status)" );
 
         } else {
             try {
@@ -120,17 +114,20 @@ public class ClientJbiListener implements Runnable {
                     Set<File> attachments = new HashSet<File> ();
                     response.setAttachments( attachments );
                     for( Object o : nm.getAttachmentNames()) {
-                        // TODO: save the files somewhere
+                    	String name = (String) o;
+                    	File f = saveTempAttachment( name, nm.getAttachment( name ));
+                    	if( f != null )
+                    		attachments.add( f );
                     }
                 }
 
                 // FAULT
                 else if( msg.getFault() != null ) {
                     response.setNature( ResponseNature.FAULT );
-                    response.setXmlPayload( Utils.createString(msg.getFault().getContent()));
+                    response.setXmlPayload( Utils.createString( msg.getFault().getContent()));
                 }
 
-                // Always check properties
+                // Always check the properties
                 Map<String,String> props = new LinkedHashMap<String, String> ();
                 response.setProperties( props );
                 if( msg.getPropertyNames() != null ) {
@@ -145,11 +142,11 @@ public class ClientJbiListener implements Runnable {
                 this.clientSe.getDeliveryChannel().send( msg );
 
                 // Report the change in the UI
-                // this.clientSe.getUiClient().displayResponse( response );
+                this.clientSe.getUiClient().displayResponse( response );
 
             } catch( Exception e ) {
-                this.clientSe.getLogger().log(Level.SEVERE, e.getClass() + ":" + e.getMessage());
-                // this.clientSe.getUiClient().reportError( "An error occurred while processing a message response.", e );
+            	Utils.log( "Error while processing a response in Petals.", e, Level.SEVERE, this.clientSe.getLogger());
+            	this.clientSe.getUiClient().reportCommunicationProblem( e );
             }
         }
     }
@@ -160,5 +157,48 @@ public class ClientJbiListener implements Runnable {
      */
     public void stopProcessing() {
         this.running = false;
+    }
+
+
+    /**
+     * Saves an attachment as a temporary file.
+     * @param name
+     * @param dh
+     */
+    private File saveTempAttachment( String name, DataHandler dh ) {
+
+    	File targetFile = null;
+    	String ext = null;
+    	if( name.indexOf( '.' ) < 0 )
+    		ext = ".txt";
+
+    	try {
+	    	InputStream in = null;
+	    	FileOutputStream fos = null;
+	    	try {
+				in = dh.getInputStream();
+				targetFile = File.createTempFile( name, ext );
+				fos = new FileOutputStream( targetFile );
+				Utils.copyStream( in, fos );
+
+			} finally {
+				try {
+					if( in != null )
+						in.close();
+				} finally {
+					if( fos != null )
+						fos.close();
+				}
+			}
+
+	    } catch( IOException e ) {
+			Utils.log( "Failed to save an attachment.", e, Level.SEVERE, this.clientSe.getLogger());
+	    }
+
+    	if( targetFile != null
+    			&& targetFile.exists())
+    		targetFile.deleteOnExit();
+
+    	return targetFile;
     }
 }

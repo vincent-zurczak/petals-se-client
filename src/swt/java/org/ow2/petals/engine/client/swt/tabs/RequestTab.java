@@ -79,6 +79,7 @@ import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.Utils;
 import org.ow2.petals.engine.client.model.OperationBean;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
+import org.ow2.petals.engine.client.model.ResponseMessageBean;
 import org.ow2.petals.engine.client.swt.ClientApplication;
 import org.ow2.petals.engine.client.swt.ImageIds;
 import org.ow2.petals.engine.client.swt.dialogs.NewWsdlOperationDialog;
@@ -178,6 +179,15 @@ public class RequestTab extends Composite {
 		this.requestComposite.setInput( null );
 		this.responseComposite.setInput( null );
 		updateMessage( null, IStatus.OK );
+	}
+
+
+	/**
+	 * Displays the response in the user interface.
+	 * @param response
+	 */
+	public void displayResponse( ResponseMessageBean response ) {
+		this.responseComposite.setInput( response );
 	}
 
 

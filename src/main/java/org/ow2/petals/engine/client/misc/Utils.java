@@ -37,6 +37,8 @@ import java.util.GregorianCalendar;
 import java.util.LinkedHashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -68,6 +70,29 @@ import com.ebmwebsourcing.easycommons.xml.XMLHelper;
  * @author Vincent Zurczak - Linagora
  */
 public class Utils {
+
+	/**
+	 * Logs an information.
+	 * @param msg a message (can be null)
+	 * @param t a throwable (can be null)
+	 * <p>
+	 * The stack trace is logged with the FINEST level.
+	 * </p>
+	 *
+	 * @param level the log level for the message
+	 * @param logger the logger (not null)
+	 */
+	public static void log( String msg, Throwable t, Level level, Logger logger ) {
+
+		if( logger != null ) {
+			String realMsg = msg != null ? msg : t.getMessage() != null ? t.getMessage() : "An error occurred.";
+			logger.log( level, realMsg );
+
+			if( t != null && logger.isLoggable( Level.FINEST ))
+				logger.log( Level.FINEST, Utils.extractStackTrace( t ));
+		}
+	}
+
 
     /**
      * Creates a string from a source.

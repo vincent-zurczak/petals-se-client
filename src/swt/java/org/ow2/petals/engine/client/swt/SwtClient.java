@@ -25,10 +25,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.dialogs.ProgressMonitorDialog;
 import org.eclipse.jface.operation.IRunnableWithProgress;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.ow2.petals.engine.client.misc.Utils;
+import org.ow2.petals.engine.client.model.ResponseMessageBean;
 import org.ow2.petals.engine.client.ui.IClientUI;
 import org.ow2.petals.engine.client.ui.PetalsFacade;
 
@@ -110,6 +113,45 @@ public class SwtClient implements IClientUI {
 	}
 
 
+	/*
+	 * (non-Javadoc)
+	 * @see org.ow2.petals.engine.client.ui.IClientUI
+	 * #reportCommunicationProblem(java.lang.Exception)
+	 */
+	@Override
+	public void reportCommunicationProblem( Exception e ) {
+
+		Display.getDefault().asyncExec( new Runnable() {
+			@Override
+			public void run() {
+				MessageDialog.openInformation(
+						new Shell(), "Error",
+						"An error occurred while interacting with Petals. Check the logs for more details." );
+			}
+		});
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.ow2.petals.engine.client.ui.IClientUI
+	 * #displayResponse(org.ow2.petals.engine.client.model.ResponseMessageBean)
+	 */
+	@Override
+	public void displayResponse( final ResponseMessageBean response ) {
+
+		if( this.clientApp == null )
+			return;
+
+		Display.getDefault().asyncExec( new Runnable() {
+			@Override
+			public void run() {
+				SwtClient.this.clientApp.displayResponse( response );
+			}
+		});
+	}
+
+
 	/**
 	 * Restarts the user interface (e.g. to take new preferences into account).
 	 */
@@ -155,15 +197,9 @@ public class SwtClient implements IClientUI {
 	 * </p>
 	 *
 	 * @param level the log level for the message
+	 * @see Utils#log(String, Throwable, Level, Logger)
 	 */
 	public void log( String msg, Throwable t, Level level ) {
-
-		if( this.logger != null ) {
-			String realMsg = msg != null ? msg : t.getMessage() != null ? t.getMessage() : "An error occurred.";
-			this.logger.log( level, realMsg );
-
-			if( t != null && this.logger.isLoggable( Level.FINEST ))
-				this.logger.log( Level.FINEST, Utils.extractStackTrace( t ));
-		}
+		Utils.log( msg, t, level, this.logger );
 	}
 }

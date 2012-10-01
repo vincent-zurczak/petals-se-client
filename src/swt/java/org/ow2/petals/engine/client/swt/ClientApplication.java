@@ -38,6 +38,7 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
+import org.ow2.petals.engine.client.model.ResponseMessageBean;
 import org.ow2.petals.engine.client.swt.dialogs.AboutDialog;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
 import org.ow2.petals.engine.client.swt.tabs.HistoryTab;
@@ -160,6 +161,16 @@ public class ClientApplication extends ApplicationWindow {
 	public void refreshHistory() {
 		if( this.historyTab != null )
 			this.historyTab.refreshHistory();
+	}
+
+
+	/**
+	 * Displays the response.
+	 * @param response
+	 */
+	public void displayResponse( ResponseMessageBean response ) {
+		if( this.requestTab != null )
+			this.requestTab.displayResponse( response );
 	}
 
 
