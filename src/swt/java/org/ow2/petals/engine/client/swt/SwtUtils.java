@@ -137,6 +137,17 @@ public class SwtUtils {
 	 */
 	public static void clearHistoryWithProgressBar( Shell shell, final int olderThan, ClientApplication clientApp ) {
 
+		// Display a warning if required
+		if( ! PreferencesManager.INSTANCE.isDefaultHistoryDirectory()) {
+			boolean proceed = MessageDialog.openQuestion( shell, "Proceed?",
+					"The history directory has been modified. Clearing the history will remove TXT files"
+					+ " located in this directory. Proceed?" );
+
+			if( ! proceed )
+				return;
+		}
+
+		// Create the runnable
 		IRunnableWithProgress runnable = new IRunnableWithProgress() {
 			@Override
 			public void run( IProgressMonitor monitor )
@@ -152,6 +163,7 @@ public class SwtUtils {
 			}
 		};
 
+		// Execute it
 		ProgressMonitorDialog dlg = new ProgressMonitorDialog( shell );
 		dlg.setOpenOnRun( true );
 		try {

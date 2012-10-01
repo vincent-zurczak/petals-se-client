@@ -257,11 +257,14 @@ public class Utils {
 			copyStream( is, os );
 
 		} finally {
-			if( is != null )
-				is.close();
+			try {
+				if( is != null )
+					is.close();
 
-			if( os != null )
-				os.close();
+			} finally {
+				if( os != null )
+					os.close();
+			}
 		}
 	}
 
@@ -272,7 +275,8 @@ public class Utils {
 	 * @return a string, never null
 	 * @throws IOException
 	 */
-	public static String loadResource( String resourceLocation ) {
+	public static String loadResource( String resourceLocation )
+	throws IOException {
 
 		String result = null;
 		InputStream in = null;
@@ -283,9 +287,6 @@ public class Utils {
 				copyStream( in, os );
 				result = os.toString( "UTF-8" );
 			}
-
-		} catch( Exception e ) {
-			// TODO
 
 		} finally {
 			closeStreamQuietly( in );
@@ -346,7 +347,8 @@ public class Utils {
 			File[] files = dir.listFiles( new FileFilter() {
 				@Override
 				public boolean accept( File pathname ) {
-					return pathname.lastModified() > limit;
+					return pathname.getName().toLowerCase().endsWith( ".txt" )
+							&& pathname.lastModified() > limit;
 				}
 			});
 

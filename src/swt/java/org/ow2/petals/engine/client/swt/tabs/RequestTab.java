@@ -25,11 +25,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 
 import javax.jbi.servicedesc.ServiceEndpoint;
 import javax.xml.namespace.QName;
 
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.layout.GridLayoutFactory;
 import org.eclipse.jface.resource.JFaceResources;
@@ -72,14 +74,14 @@ import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 import org.ow2.easywsdl.wsdl.api.Description;
 import org.ow2.easywsdl.wsdl.api.InterfaceType;
-import org.ow2.easywsdl.wsdl.api.Operation;
 import org.ow2.easywsdl.wsdl.api.WSDLReader;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.Utils;
-import org.ow2.petals.engine.client.model.Mep;
+import org.ow2.petals.engine.client.model.OperationBean;
 import org.ow2.petals.engine.client.model.RequestMessageBean;
 import org.ow2.petals.engine.client.swt.ClientApplication;
 import org.ow2.petals.engine.client.swt.ImageIds;
+import org.ow2.petals.engine.client.swt.dialogs.NewWsdlOperationDialog;
 import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog;
 import org.ow2.petals.engine.client.swt.dialogs.ShowWsdlDialog;
 import org.ow2.petals.engine.client.ui.PetalsFacade;
@@ -109,8 +111,7 @@ public class RequestTab extends Composite {
 
 	private Description wsdlDescription;
 	private String wsdlDescriptionAsString;
-	private QName operationName;
-	private Mep mep;
+	private OperationBean operationBean;
 
 
 
@@ -140,10 +141,8 @@ public class RequestTab extends Composite {
 		String msg = null;
 		if( this.itfText.getData() == null )
 			msg = "No target service was specified.";
-		else if( this.operationName == null )
+		else if( this.operationBean == null )
 			msg = "You must specify the name of the operation to invoke.";
-		else if( this.mep == null )
-			msg = "You must specify the MEP (Message Invocation Pattern).";
 		else if( Utils.isEmptyString( this.requestComposite.getPayload()))
 			msg = "You must define a XML payload in the request message.";
 		else {
@@ -161,9 +160,8 @@ public class RequestTab extends Composite {
 				try {
 					Utils.buildDocument( this.requestComposite.getPayload());
 				} catch( Exception e ) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 					msg = "The request's payload is not a valid XML document.";
+					this.clientApp.log( msg, e, Level.INFO );
 				}
 			}
 		}
@@ -224,43 +222,45 @@ public class RequestTab extends Composite {
 	    this.operationViewer = new ComboViewer( new CCombo( lineContainer, SWT.BORDER | SWT.DROP_DOWN | SWT.READ_ONLY ));
 	    this.operationViewer.getCCombo().setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
 	    this.operationViewer.setContentProvider( new ArrayContentProvider());
-	    this.operationViewer.setLabelProvider( new LabelProvider() {
-	    	@Override
-	    	public String getText( Object elt ) {
-	    		return elt instanceof Operation ? ((Operation) elt).getQName().getLocalPart() : "";
-	    	}
-	    });
+	    this.operationViewer.setLabelProvider( new LabelProvider());
 
 	    this.operationViewer.addSelectionChangedListener( new ISelectionChangedListener() {
 			@Override
 			public void selectionChanged( SelectionChangedEvent e ) {
 
 				// Generate a new request? Yes, if empty.
+				boolean validate = true;
 				if( Utils.isEmptyString( RequestTab.this.requestComposite.getPayload()))
 					RequestTab.this.requestComposite.setPayload( generateSkeleton());
-				else
+				else {
+					validate = false;
 					updateMessage( "The request may not match the selected service operation.", IStatus.WARNING );
+				}
 
 				// Get data
 				ISelection selection = RequestTab.this.operationViewer.getSelection();
 				if( selection.isEmpty()) {
-					RequestTab.this.operationName = null;
-					RequestTab.this.mep = null;
+					RequestTab.this.operationBean = null;
 				} else {
-					Operation op = (Operation) ((IStructuredSelection) selection).getFirstElement();
-					RequestTab.this.operationName = op.getQName();
-					if( op.getInput() != null && op.getInput().getElement() != null )
-						RequestTab.this.mep = Mep.IN_ONLY;
-					else
-						RequestTab.this.mep = Mep.IN_OUT;
+					RequestTab.this.operationBean = (OperationBean) ((IStructuredSelection) selection).getFirstElement();
 				}
 
-				validate();
+				// Validate?
+				if( validate )
+					validate();
 			}
 		});
 
 	    Button customOperationButton = new Button( lineContainer, SWT.PUSH );
 	    customOperationButton.setText( "Define a Custom Operation..." );
+	    customOperationButton.addListener( SWT.Selection, new Listener() {
+	    	@Override
+	    	public void handleEvent( Event e ) {
+	    		NewWsdlOperationDialog dlg = new NewWsdlOperationDialog( getShell(), RequestTab.this.operationBean );
+	    		if( dlg.open() == Window.OK )
+	    			updateOperationName( dlg.getOperationBean());
+	    	}
+	    });
 
 	    this.showWsdlButton = new Button( lineContainer, SWT.PUSH );
 	    this.showWsdlButton.setText( "Show WSDL" );
@@ -327,8 +327,8 @@ public class RequestTab extends Composite {
 						displayEntireRequest( req );
 
 					} catch( IOException e1 ) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						MessageDialog.openInformation( getShell(), "Error", "An error occurred while saving the request." );
+						RequestTab.this.clientApp.log( "Error while saving a request.", e1, Level.INFO );
 					}
 				}
 			}
@@ -349,8 +349,8 @@ public class RequestTab extends Composite {
 						displayEntireRequest( req );
 
 					} catch( IOException e1 ) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
+						MessageDialog.openInformation( getShell(), "Error", "An error occurred while saving the request." );
+						RequestTab.this.clientApp.log( "Error while saving a request.", e1, Level.INFO );
 					}
 				}
 			}
@@ -440,10 +440,11 @@ public class RequestTab extends Composite {
 				File outputFile = new File( result );
 				File inputFile = (File) ((IStructuredSelection) s).getFirstElement();
 				try {
-					Utils.copyFile( inputFile, outputFile);
-				} catch (IOException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					Utils.copyFile( inputFile, outputFile );
+
+				} catch( IOException e1 ) {
+					MessageDialog.openInformation( getShell(), "Error", "An error occurred while saving an attachment." );
+					RequestTab.this.clientApp.log( "Error while saving an attachment.", e1, Level.INFO );
 				}
 			}
 		});
@@ -525,8 +526,8 @@ public class RequestTab extends Composite {
 					updateMessage( "The request was successfully sent.", IStatus.INFO );
 
 				} catch( Exception e1 ) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+					MessageDialog.openInformation( getShell(), "Error", "An error occurred while sending a request to a Petals service." );
+					RequestTab.this.clientApp.log( "Error while sending a Petals message.", e1, Level.INFO );
 
 				} finally {
 
@@ -536,9 +537,8 @@ public class RequestTab extends Composite {
 							Utils.saveRequest( f, req, false );
 							RequestTab.this.clientApp.refreshHistory();
 
-						} catch (IOException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
+						} catch( IOException e1 ) {
+							RequestTab.this.clientApp.log( "Error while updating the history.", e1, Level.INFO );
 						}
 					}
 				}
@@ -553,12 +553,10 @@ public class RequestTab extends Composite {
 	 */
 	public void displayEntireRequest( RequestMessageBean req ) {
 
-		this.operationName = req.getOperation();
-		this.mep = req.getMep();
-
 		updateInterfaceName( req.getInterfaceName());
 		updateServiceName( req.getServiceName());
 		updateEndpointName( req.getEndpointName());
+		updateOperationName( new OperationBean( req.getMep(), req.getOperation()));
 
 		this.requestComposite.setInput( req );
 		this.responseComposite.setInput( null );
@@ -591,7 +589,7 @@ public class RequestTab extends Composite {
 		final QName itfName = (QName) this.itfText.getData();
 		final QName srvName = (QName) this.srvText.getData();
 		final String edptName = this.edptText.getText();
-		final List<Operation> ops = new ArrayList<Operation> ();;
+		final List<OperationBean> ops = new ArrayList<OperationBean> ();;
 
 		// Runnable to execute in the UI thread, once communications with Petals are over
 		final Runnable uiRunnable = new Runnable() {
@@ -639,15 +637,14 @@ public class RequestTab extends Composite {
 					// Get the operations
 					if( RequestTab.this.wsdlDescription != null ) {
 						for( InterfaceType it : RequestTab.this.wsdlDescription.getInterfaces())
-							ops.addAll( it.getOperations());
+							ops.addAll( OperationBean.convert( it.getOperations()));
 					}
 
 					// Update the user interface
 					Display.getDefault().asyncExec( uiRunnable );
 
 				} catch( Exception e ) {
-					// TODO
-					e.printStackTrace();
+					RequestTab.this.clientApp.log( "An error occurred while generating a request.", e, Level.INFO );
 				}
 			}
 		};
@@ -700,8 +697,7 @@ public class RequestTab extends Composite {
 					Display.getDefault().asyncExec( uiRunnable );
 
 				} catch( Exception e ) {
-					// TODO
-					e.printStackTrace();
+					RequestTab.this.clientApp.log( "Error while retrieving Petals services.", e, Level.INFO );
 				}
 			}
 		};
@@ -791,6 +787,25 @@ public class RequestTab extends Composite {
 
 
 	/**
+	 * Updates the operation.
+	 * @param op
+	 */
+	private void updateOperationName( OperationBean op ) {
+
+		List<Object> newInput = new ArrayList<Object> ();
+		Object input = this.operationViewer.getInput();
+		if( input instanceof List<?> )
+			newInput.addAll((List<?>) input);
+
+		newInput.add( op );
+		RequestTab.this.operationViewer.setInput( newInput );
+
+		this.operationViewer.setSelection( new StructuredSelection( op ));
+		RequestTab.this.operationViewer.getCCombo().notifyListeners( SWT.Selection, new Event());
+	}
+
+
+	/**
 	 * @return a non-null instance of {@link RequestMessageBean}
 	 */
 	private RequestMessageBean createRequestInstance() {
@@ -805,8 +820,10 @@ public class RequestTab extends Composite {
 		result.setXmlPayload( this.requestComposite.getPayload());
 
 		result.setTimeout( this.timeoutSpinner.getSelection());
-		result.setOperation( this.operationName );
-		result.setMep( this.mep );
+		if( this.operationBean != null ) {
+			result.setOperation( this.operationBean.getOperationName());
+			result.setMep( this.operationBean.getMep());
+		}
 
 		return result;
 	}
@@ -817,23 +834,25 @@ public class RequestTab extends Composite {
 	 */
 	private String generateSkeleton() {
 
-		String requestPayload;
+		String requestPayload = null;
 		ISelection selection = RequestTab.this.operationViewer.getSelection();
-		if( ! selection.isEmpty()) {
-			Operation op = (Operation) ((IStructuredSelection) selection).getFirstElement();
+		if( ! selection.isEmpty()
+				&& this.wsdlDescription != null ) {
+
+			OperationBean op = (OperationBean) ((IStructuredSelection) selection).getFirstElement();
 			QName itfName = (QName) RequestTab.this.itfText.getData();
 			try {
 				requestPayload = Utils.generateXmlSkeleton(
 						RequestTab.this.wsdlDescription,
-						itfName, op.getQName(), true );
+						itfName, op.getOperationName(), true );
 
 			} catch( Exception e1 ) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				RequestTab.this.clientApp.log( "Error while generating a XML skeleton.", e1, Level.INFO );
 				requestPayload = DEFAULT_SKELETON + COMMENT_INVALID_WSDL;
 			}
+		}
 
-		} else {
+		if( requestPayload == null ) {
 			requestPayload = DEFAULT_SKELETON + COMMENT_NO_WSDL;
 		}
 

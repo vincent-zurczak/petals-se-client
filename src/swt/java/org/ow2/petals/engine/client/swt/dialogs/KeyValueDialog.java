@@ -57,6 +57,7 @@ public class KeyValueDialog extends Dialog {
 	 */
 	public KeyValueDialog( Shell parentShell, Map<String,String> currentProperties ) {
 		super( parentShell );
+		setShellStyle( SWT.SHELL_TRIM );
 		this.currentProperties = currentProperties;
 	}
 

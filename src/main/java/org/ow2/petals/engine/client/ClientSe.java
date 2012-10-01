@@ -67,7 +67,7 @@ public class ClientSe implements Component, ComponentLifeCycle {
 	 * #init(javax.jbi.component.ComponentContext)
 	 */
 	@Override
-    public void init(ComponentContext context) throws JBIException {
+    public void init( ComponentContext context ) throws JBIException {
 		this.context = context;
 		this.logger = context.getLogger( "", null );
 		this.channel = this.context.getDeliveryChannel();

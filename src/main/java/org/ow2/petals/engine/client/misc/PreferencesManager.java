@@ -61,6 +61,14 @@ public class PreferencesManager {
 
 
 	/**
+	 * @return true if the history directory is the default one, false otherwise
+	 */
+	public boolean isDefaultHistoryDirectory() {
+		return null == getPreferences().get( HISTORY_DIR, null );
+	}
+
+
+	/**
 	 * @param f the directory that contains the history
 	 */
 	public void saveHistoryDirectory( File f ) {

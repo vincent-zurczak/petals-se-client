@@ -51,6 +51,7 @@ public class AboutDialog extends Dialog {
 	 */
 	public AboutDialog( Shell parentShell ) {
 		super( parentShell );
+		setShellStyle( SWT.SHELL_TRIM );
 		this.petalsImg = JFaceResources.getImage( ImageIds.PETALS_SPLASH );
 	}
 

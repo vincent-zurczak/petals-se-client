@@ -21,10 +21,12 @@
 package org.ow2.petals.engine.client.swt.tabs;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -105,6 +107,7 @@ public class PreferencesTab extends Composite {
 				if( dir != null ) {
 					PreferencesManager.INSTANCE.saveHistoryDirectory( new File( dir ));
 					directoryText.setText( dir );
+					clientApp.refreshHistory();
 				}
 			}
 		});
@@ -119,6 +122,7 @@ public class PreferencesTab extends Composite {
 				PreferencesManager.INSTANCE.saveHistoryDirectory( null );
 				File f = PreferencesManager.INSTANCE.getHistoryDirectory();
 				directoryText.setText( f.getAbsolutePath());
+				clientApp.refreshHistory();
 			}
 		});
 
@@ -200,8 +204,13 @@ public class PreferencesTab extends Composite {
 
 		// Show a preview area
 		final StyledText previewStyledText = SwtUtils.createXmlViewer( shGroup, colorManager, false );
-		String previewText = Utils.loadResource( "/sample.xml" );
-		previewStyledText.setText( previewText );
+		try {
+			String previewText = Utils.loadResource( "/sample.xml" );
+			previewStyledText.setText( previewText );
+
+		} catch( IOException e1 ) {
+			clientApp.log( "An error occurred while loading a request file.", e1, Level.INFO );
+		}
 
 		// List the customizable elements...
 		Composite subContainer = new Composite( shGroup, SWT.NONE );

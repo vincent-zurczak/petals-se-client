@@ -36,39 +36,6 @@ import org.ow2.petals.engine.client.swt.dialogs.ServiceRegistryViewerDialog.SrvB
  */
 public class ServiceRegistryLabelProvider extends ColumnLabelProvider {
 
-	private final Image edptImage, itfImage, srvImage;
-
-
-	/**
-	 * Constructor.
-	 */
-	public ServiceRegistryLabelProvider() {
-		this.itfImage = JFaceResources.getImage( ImageIds.CONTRACT_16x16 );
-		this.srvImage = JFaceResources.getImage( ImageIds.SERVICE_16x16 );
-		this.edptImage = JFaceResources.getImage( ImageIds.ENDPOINT_16x16 );
-	}
-
-
-	/*
-	 * (non-Javadoc)
-	 * @see org.eclipse.jface.viewers.BaseLabelProvider
-	 * #dispose()
-	 */
-	@Override
-	public void dispose() {
-		super.dispose();
-
-		if( this.edptImage != null && ! this.edptImage.isDisposed())
-			this.edptImage.dispose();
-
-		if( this.srvImage != null && ! this.srvImage.isDisposed())
-			this.srvImage.dispose();
-
-		if( this.itfImage != null && ! this.itfImage.isDisposed())
-			this.itfImage.dispose();
-	}
-
-
 	/*
 	 * (non-Javadoc)
 	 * @see org.eclipse.jface.viewers.ColumnLabelProvider
@@ -103,11 +70,11 @@ public class ServiceRegistryLabelProvider extends ColumnLabelProvider {
 
 		Image result = null;
 		if( element instanceof ItfBean )
-			result = this.itfImage;
+			result = JFaceResources.getImage( ImageIds.CONTRACT_16x16 );
 		else if( element instanceof SrvBean )
-			result = this.srvImage;
+			result = JFaceResources.getImage( ImageIds.SERVICE_16x16 );
 		else if( element instanceof EdptBean )
-			result = this.edptImage;
+			result = JFaceResources.getImage( ImageIds.ENDPOINT_16x16 );
 
 		return result;
 	}

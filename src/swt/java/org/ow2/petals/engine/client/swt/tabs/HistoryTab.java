@@ -137,7 +137,7 @@ public class HistoryTab extends Composite {
 		column.setLabelProvider( new HistoryFirstColumnLabelProvider( 2, this.boldFont ));
 
 		column = new TreeViewerColumn( this.historyViewer, SWT.CENTER );
-		column.getColumn().setText( "Date" );
+		column.getColumn().setText( "Time" );
 		column.setLabelProvider( new HistorySecondColumnLabelProvider());
 
 

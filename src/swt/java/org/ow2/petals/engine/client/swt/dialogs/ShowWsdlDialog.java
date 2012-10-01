@@ -135,7 +135,6 @@ public class ShowWsdlDialog extends Dialog {
 	@Override
 	protected Button createButton( Composite parent, int id, String label, boolean defaultButton ) {
 		return id == Dialog.CANCEL ? null : super.createButton( parent, id, label, defaultButton );
-
 	}
 
 
