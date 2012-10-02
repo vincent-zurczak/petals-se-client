@@ -29,28 +29,36 @@ This is achieved through Maven classifiers. Here are the commands.
 
 The following classifiers are currently available:
 
-{|
-! Operating System
-! Maven Classifier
-|-
-| Windows x64
-| win32.win32.x86_64
-|-
-| Windows x32
-| win32.win32.x86
-|-
-| Linux x64 with GTK
-| gtk.linux.x86_64
-|-
-| Linux x32 with GTK
-| gtk.linux.x86
-|-
-| MacOS X x64 with Cocoa
-| cocoa.macosx.x86_64
-|-
-| MacOS X with Cocoa
-| cocoa.macosx
-|}
+<table>
+	<tr>
+		<th>Operating System</th>
+		<th>Maven Classifier</th>
+	</tr>
+	<tr>
+		<td>Windows x64</td>
+		<td>win32.win32.x86_64</td>
+	</tr>
+	<tr>
+		<td>Windows x32</td>
+		<td>win32.win32.x86</td>
+	</tr>
+	<tr>
+		<td>Linux x64 with GTK</td>
+		<td>gtk.linux.x86_64</td>
+	</tr>
+	<tr>
+		<td>Linux x32 with GTK</td>
+		<td>gtk.linux.x86</td>
+	</tr>
+	<tr>
+		<td>MacOS X x64 with Cocoa</td>
+		<td>cocoa.macosx.x86_64</td>
+	</tr>
+	<tr>
+		<td>MacOS X with Cocoa</td>
+		<td>cocoa.macosx</td>
+	</tr>
+</table>
 
 Some others may be found at http://swt-repo.googlecode.com/svn/repo/org/eclipse/swt/
 
