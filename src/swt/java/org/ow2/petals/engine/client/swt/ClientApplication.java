@@ -38,6 +38,7 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
+import org.ow2.petals.engine.client.model.RequestMessageBean;
 import org.ow2.petals.engine.client.model.ResponseMessageBean;
 import org.ow2.petals.engine.client.swt.dialogs.AboutDialog;
 import org.ow2.petals.engine.client.swt.syntaxhighlighting.ColorCacheManager;
@@ -55,6 +56,7 @@ public class ClientApplication extends ApplicationWindow {
 	private final ColorCacheManager colorManager;
 	private final SwtClient swtClient;
 
+	private TabFolder tabFolder;
 	private HistoryTab historyTab;
 	private RequestTab requestTab;
 
@@ -115,25 +117,25 @@ public class ClientApplication extends ApplicationWindow {
 		// Create the main parts
 		createMenu( container );
 
-		TabFolder tabFolder = new TabFolder( container, SWT.TOP );
-		tabFolder.setLayoutData( new GridData( GridData.FILL_BOTH ));
+		this.tabFolder = new TabFolder( container, SWT.TOP );
+		this.tabFolder.setLayoutData( new GridData( GridData.FILL_BOTH ));
 
-		TabItem tabItem = new TabItem( tabFolder, SWT.NONE );
+		TabItem tabItem = new TabItem( this.tabFolder, SWT.NONE );
 	    tabItem.setText( "Client" );
 	    tabItem.setToolTipText( "The client area" );
-	    this.requestTab = new RequestTab( tabFolder, this );
+	    this.requestTab = new RequestTab( this.tabFolder, this );
 	    tabItem.setControl( this.requestTab );
 
-	    tabItem = new TabItem( tabFolder, SWT.NONE );
+	    tabItem = new TabItem( this.tabFolder, SWT.NONE );
 	    tabItem.setText( "History" );
         tabItem.setToolTipText( "The requests history" );
-        this.historyTab = new HistoryTab( tabFolder, this );
+        this.historyTab = new HistoryTab( this.tabFolder, this );
 	    tabItem.setControl( this.historyTab );
 
-	    tabItem = new TabItem( tabFolder, SWT.NONE );
+	    tabItem = new TabItem( this.tabFolder, SWT.NONE );
 	    tabItem.setText( "Preferences" );
         tabItem.setToolTipText( "The user preferences" );
-	    tabItem.setControl( new PreferencesTab( tabFolder, this ));
+	    tabItem.setControl( new PreferencesTab( this.tabFolder, this ));
 
 		return container;
 	}
@@ -161,6 +163,18 @@ public class ClientApplication extends ApplicationWindow {
 	public void refreshHistory() {
 		if( this.historyTab != null )
 			this.historyTab.refreshHistory();
+	}
+
+
+	/**
+	 * Displays a request in the request tab.
+	 * @param request
+	 */
+	public void displayRequest( RequestMessageBean request ) {
+		if( this.requestTab != null ) {
+			this.requestTab.displayEntireRequest( request );
+			this.tabFolder.setSelection( 0 );
+		}
 	}
 
 

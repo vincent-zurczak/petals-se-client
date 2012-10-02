@@ -49,9 +49,12 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 import org.ow2.petals.engine.client.misc.PreferencesManager;
 import org.ow2.petals.engine.client.misc.RequestMessageBeanUtils;
@@ -75,6 +78,7 @@ public class HistoryTab extends Composite {
 
 	private final TreeViewer historyViewer;
 	private final Font boldFont;
+	private RequestMessageBean shownRequest;
 
 
 	/**
@@ -219,6 +223,17 @@ public class HistoryTab extends Composite {
 		final Label dateLabel = new Label( subContainer, SWT.NONE );
 		dateLabel.setLayoutData( new GridData( GridData.FILL_HORIZONTAL ));
 
+		final Button loadButton = new Button( subContainer, SWT.PUSH );
+		loadButton.setText( "Load this Request" );
+		loadButton.setVisible( false );
+		GridDataFactory.swtDefaults().span( 2, 1 ).indent( 0, 10 ).grab( true, false ).align( SWT.FILL, SWT.CENTER ).applyTo( loadButton );
+		loadButton.addListener( SWT.Selection, new Listener() {
+			@Override
+			public void handleEvent( Event e ) {
+				clientApp.displayRequest( HistoryTab.this.shownRequest );
+			}
+		});
+
 
 	    // Define the sash weights
 	    sashForm.setWeights( new int[] { 50, 50 });
@@ -230,8 +245,8 @@ public class HistoryTab extends Composite {
 			public void selectionChanged( SelectionChangedEvent e ) {
 
 				Object o = ((IStructuredSelection) e.getSelection()).getFirstElement();
-				RequestMessageBean req = null;
 				String date = null;
+				RequestMessageBean req = null;
 				if( o instanceof File ) {
 					try {
 						InputStream is = new FileInputStream((File) o);
@@ -243,11 +258,15 @@ public class HistoryTab extends Composite {
 
 					} catch( Exception e1 ) {
 						clientApp.log( "Error while reading a history entry.", e1, Level.INFO );
+
+					} finally {
+						HistoryTab.this.shownRequest = req;
+						loadButton.setEnabled( HistoryTab.this.shownRequest != null );
 					}
 				}
 
-
 				if( req != null ) {
+					loadButton.setVisible( true );
 					xmlPayloadStyledText.setText( req.getXmlPayload() != null ? req.getXmlPayload() : "" );
 					itfNameLabel.setText( req.getInterfaceName().getLocalPart() + " - "  + req.getInterfaceName().getNamespaceURI());
 					edptNameLabel.setText( Utils.isEmptyString( req.getEndpointName()) ? "-" : req.getEndpointName());
@@ -275,6 +294,7 @@ public class HistoryTab extends Composite {
 					propsCountLabel.setText( "" );
 					attCountLabel.setText( "" );
 					dateLabel.setText( "" );
+					loadButton.setVisible( false );
 				}
 			}
 		});

@@ -23,6 +23,8 @@ package org.ow2.petals.engine.client.swt.tabs;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -563,14 +565,18 @@ public class RequestTab extends Composite {
 	 */
 	public void displayEntireRequest( RequestMessageBean req ) {
 
+		// Restore the service ID
 		updateInterfaceName( req.getInterfaceName());
 		updateServiceName( req.getServiceName());
 		updateEndpointName( req.getEndpointName());
-		updateOperationName( new OperationBean( req.getMep(), req.getOperation()));
 
+		// Update the remaining parts
 		this.requestComposite.setInput( req );
 		this.responseComposite.setInput( null );
-		resolveServiceEndpoint();
+		this.operationBean = new OperationBean( req.getMep(), req.getOperation());
+
+		// Resolve the end-point
+		resolveServiceEndpoint( true );
 	}
 
 
@@ -592,14 +598,19 @@ public class RequestTab extends Composite {
 
 	/**
 	 * Resolves the real service end-point from a service identifier.
+	 * @param restore true if the resolution is made in the scope of a restoration.
+	 * <p>
+	 * A restoration will update the information but not alter neither the selection in the
+	 * operation viewer, nor the input pay load.
+	 * </p>
 	 */
-	private void resolveServiceEndpoint() {
+	private void resolveServiceEndpoint( final boolean restore ) {
 
 		// UI thread: get what we need, just in case
 		final QName itfName = (QName) this.itfText.getData();
 		final QName srvName = (QName) this.srvText.getData();
 		final String edptName = this.edptText.getText();
-		final List<OperationBean> ops = new ArrayList<OperationBean> ();;
+		final Set<OperationBean> ops = new HashSet<OperationBean> ();;
 
 		// Runnable to execute in the UI thread, once communications with Petals are over
 		final Runnable uiRunnable = new Runnable() {
@@ -610,15 +621,22 @@ public class RequestTab extends Composite {
 				RequestTab.this.operationViewer.setInput( ops );
 				RequestTab.this.operationViewer.refresh();
 				RequestTab.this.operationViewer.getCCombo().setVisibleItemCount( ops.isEmpty() ? 5 : ops.size());
-				if( ops.size() > 0 )
-					RequestTab.this.operationViewer.setSelection( new StructuredSelection( ops.get( 0 )));
+				if( restore && RequestTab.this.operationBean != null )
+					RequestTab.this.operationViewer.setSelection( new StructuredSelection( RequestTab.this.operationBean ));
+				else if( ops.size() > 0 )
+					RequestTab.this.operationViewer.setSelection( new StructuredSelection( ops.iterator().next()));
 
 				// Update the buttons
 				RequestTab.this.showWsdlButton.setEnabled( RequestTab.this.wsdlDescriptionAsString != null );
 
 				// Complete the operation
 				updateProgressReport( null );
-				RequestTab.this.operationViewer.getCCombo().notifyListeners( SWT.Selection, new Event());
+				if( restore )
+					validate();
+
+				// To do only after the progress report is done...
+				if( ops.isEmpty())
+					RequestTab.this.operationViewer.getCCombo().notifyListeners( SWT.Selection, new Event());
 			}
 		};
 
@@ -649,6 +667,10 @@ public class RequestTab extends Composite {
 						for( InterfaceType it : RequestTab.this.wsdlDescription.getInterfaces())
 							ops.addAll( OperationBean.convert( it.getOperations()));
 					}
+
+					// Restore?
+					if( restore && RequestTab.this.operationBean != null )
+						ops.add( RequestTab.this.operationBean );
 
 					// Update the user interface
 					Display.getDefault().asyncExec( uiRunnable );
@@ -687,7 +709,7 @@ public class RequestTab extends Composite {
 					updateEndpointName( dlg.getEdptToInvoke());
 
 					// WSDL description to resolve
-					resolveServiceEndpoint();
+					resolveServiceEndpoint( false );
 				}
 			}
 		};
@@ -802,10 +824,10 @@ public class RequestTab extends Composite {
 	 */
 	private void updateOperationName( OperationBean op ) {
 
-		List<Object> newInput = new ArrayList<Object> ();
+		Set<Object> newInput = new HashSet<Object> ();
 		Object input = this.operationViewer.getInput();
-		if( input instanceof List<?> )
-			newInput.addAll((List<?>) input);
+		if( input instanceof Collection<?> )
+			newInput.addAll((Collection<?>) input);
 
 		newInput.add( op );
 		RequestTab.this.operationViewer.setInput( newInput );

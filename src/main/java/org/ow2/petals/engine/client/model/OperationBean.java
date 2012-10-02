@@ -98,4 +98,43 @@ public class OperationBean {
 
 		return result;
 	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object
+	 * #equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals( Object obj ) {
+
+		if(!( obj instanceof OperationBean ))
+			return false;
+
+		OperationBean ob = (OperationBean) obj;
+		if( ob.mep != this.mep )
+			return false;
+
+		if( ob.operationName != null ) {
+			if( ! ob.operationName.equals( this.operationName ))
+				return false;
+		} else if( this.operationName != null )
+			return false;
+
+		return true;
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object
+	 * #hashCode()
+	 */
+	@Override
+	public int hashCode() {
+
+		int result = this.mep == Mep.IN_ONLY ? 1 : this.mep == Mep.IN_OUT ? 3 : this.mep == Mep.IN_OPTIONAL_OUT ? 5 : 7;
+		result *= this.operationName == null ? 11 : this.operationName.hashCode();
+		return result;
+	}
 }
