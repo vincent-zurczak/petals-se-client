@@ -7,7 +7,7 @@ A Petals component that provides a GUI to interact with Petals services.
 + The User Interface can be tested manually, without a running Petals server.
 
 
-Runing an Debugging the User Interface
+Running and Debugging the User Interface
 --------------------------------------
 
 Under *test/main/java*, in the package *org.ow2.petals.engine.client.swt.manual*, execute the class **Main**.
