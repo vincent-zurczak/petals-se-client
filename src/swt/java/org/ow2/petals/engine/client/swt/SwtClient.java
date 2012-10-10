@@ -52,9 +52,17 @@ public class SwtClient implements IClientUI {
      */
     @Override
     public void open() {
-        this.clientApp = new ClientApplication( this );
-        this.clientApp.setBlockOnOpen( true );
-        this.clientApp.open();
+
+    	Runnable runnable = new Runnable() {
+    		@Override
+			public void run() {
+    			SwtClient.this.clientApp = new ClientApplication( SwtClient.this );
+    			SwtClient.this.clientApp.setBlockOnOpen( true );
+    			SwtClient.this.clientApp.open();
+    		}
+    	};
+
+    	new Thread( runnable ).start();
     }
 
 
@@ -64,7 +72,13 @@ public class SwtClient implements IClientUI {
      */
     @Override
     public void close() {
-    	this.clientApp.close();
+
+    	Display.getDefault().asyncExec( new Runnable() {
+			@Override
+			public void run() {
+				SwtClient.this.clientApp.close();
+			}
+		});
     }
 
 
@@ -201,5 +215,18 @@ public class SwtClient implements IClientUI {
 	 */
 	public void log( String msg, Throwable t, Level level ) {
 		Utils.log( msg, t, level, this.logger );
+	}
+
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.ow2.petals.engine.client.ui.IClientUI
+	 * #canRun()
+	 */
+	@Override
+	public boolean canRun() {
+		// For more recent versions of SWT.
+		// return SWT.isLoadable():
+		return true;
 	}
 }

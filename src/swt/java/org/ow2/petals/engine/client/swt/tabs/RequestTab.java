@@ -700,6 +700,11 @@ public class RequestTab extends Composite {
 			@Override
 			public void run() {
 				updateProgressReport( null );
+				if( ses.isEmpty()) {
+					MessageDialog.openInformation( getShell(), "No Service Found", "There is currently no service in the Petals registry." );
+					return;
+				}
+
 				ServiceRegistryViewerDialog dlg = new ServiceRegistryViewerDialog( getShell(), ses );
 				if( dlg.open() == Window.OK ) {
 

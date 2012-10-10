@@ -33,6 +33,7 @@ public interface IClientUI {
     /**
      * Shows a shell with a user interface.
      * <p><b>This method is always invoked from a non-UI thread.</b></p>
+     * <p>It can not be blocking.</p>
      */
     void open();
 
@@ -69,4 +70,9 @@ public interface IClientUI {
      * @param response the response (not null)
      */
     void displayResponse( ResponseMessageBean response );
+
+    /**
+     * @return true if this client can run, false otherwise
+     */
+    boolean canRun();
 }

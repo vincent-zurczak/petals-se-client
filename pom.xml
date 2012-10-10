@@ -99,7 +99,6 @@
 							<resources>
                 				<resource>
                   					<directory>src/swt/resources</directory>
-                  					<targetPath>swt/resources</targetPath>
                   				</resource>
                   			</resources>
 						</configuration>
@@ -118,16 +117,6 @@
 	          		<jbiName>${project.artifactId}-${project.version}-${classifier}</jbiName>
 	        	</configuration>
 	      	</plugin>
-		
-		
-			<!-- Generate several component versions from a single project -->
-        	<plugin>
-        		<artifactId>maven-jar-plugin</artifactId>
-        		<version>2.4</version>
-        		<configuration>
-          			<classifier>${classifier}</classifier>
-        		</configuration>
-      		</plugin>
   		</plugins>
 	</build>
 	
